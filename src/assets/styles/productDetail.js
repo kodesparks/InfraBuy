@@ -144,4 +144,64 @@ export default StyleSheet.create({
     fontSize: 16,
     color: colors.darkGray,
   },
+  expandableArrowRotated: {
+    transform: [{ rotate: '90deg' }],
+  },
+  expandableContent: {
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    backgroundColor: colors.lightGray,
+    marginHorizontal: -10,
+    marginBottom: 10,
+    borderRadius: 8,
+  },
+  expandableContentText: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+  },
+  specItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.white,
+  },
+  specLabel: {
+    fontSize: 14,
+    color: colors.darkGray,
+    fontWeight: '500',
+  },
+  specValue: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  deliveryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.white,
+  },
+  deliveryIcon: {
+    fontSize: 24,
+    marginRight: 15,
+    width: 30,
+    textAlign: 'center',
+  },
+  deliveryTextContainer: {
+    flex: 1,
+  },
+  deliveryTitle: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  deliverySubtitle: {
+    fontSize: 12,
+    color: colors.darkGray,
+  },
 }); 

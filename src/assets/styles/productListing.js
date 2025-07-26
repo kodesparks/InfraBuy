@@ -68,12 +68,92 @@ export default StyleSheet.create({
     fontSize: 16,
     color: colors.text,
   },
+  clearButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.lightGray,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  clearButtonText: {
+    fontSize: 12,
+    color: colors.darkGray,
+    fontWeight: 'bold',
+  },
   filterButton: {
     marginLeft: 10,
   },
   filterIcon: {
     fontSize: 18,
     color: colors.darkGray,
+  },
+  filterContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+    backgroundColor: colors.background,
+  },
+  filterList: {
+    paddingRight: 20,
+  },
+  filterItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 10,
+    borderRadius: 20,
+    backgroundColor: colors.lightGray,
+    borderWidth: 1,
+    borderColor: colors.lightGray,
+  },
+  filterItemSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  filterText: {
+    fontSize: 14,
+    color: colors.darkGray,
+    fontWeight: '500',
+  },
+  filterTextSelected: {
+    color: colors.white,
+  },
+  resultsInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 15,
+  },
+  resultsText: {
+    fontSize: 14,
+    color: colors.darkGray,
+  },
+  clearFilterText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  emptyIcon: {
+    fontSize: 60,
+    marginBottom: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    color: colors.darkGray,
+    textAlign: 'center',
   },
   productsContainer: {
     paddingHorizontal: 20,
@@ -153,7 +233,4 @@ export default StyleSheet.create({
     fontWeight: '600',
     color: colors.primary,
   },
-
-
-
 }); 

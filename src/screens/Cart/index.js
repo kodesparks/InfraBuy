@@ -41,7 +41,52 @@ const Cart = ({ navigation }) => {
     );
   };
 
+  const deleteItem = (itemId) => {
+    Alert.alert(
+      'Remove Item',
+      'Are you sure you want to remove this item from cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+          }
+        }
+      ]
+    );
+  };
+
+  const clearCart = () => {
+    if (cartItems.length === 0) {
+      Alert.alert('Cart Empty', 'Your cart is already empty.');
+      return;
+    }
+
+    Alert.alert(
+      'Clear Cart',
+      'Are you sure you want to remove all items from your cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear All', 
+          style: 'destructive',
+          onPress: () => {
+            setCartItems([]);
+            Alert.alert('Cart Cleared', 'All items have been removed from your cart.');
+          }
+        }
+      ]
+    );
+  };
+
   const handlePlaceOrder = () => {
+    if (cartItems.length === 0) {
+      Alert.alert('Empty Cart', 'Please add items to your cart before placing an order.');
+      return;
+    }
+
     if (!shippingAddress.trim()) {
       Alert.alert('Error', 'Please enter your shipping address');
       return;
@@ -52,6 +97,8 @@ const Cart = ({ navigation }) => {
 
   const handleContinueShopping = () => {
     setShowConfirmation(false);
+    setCartItems([]); // Clear cart after successful order
+    setShippingAddress(''); // Clear address
     navigation.navigate('MainApp');
   };
 
@@ -79,54 +126,86 @@ const Cart = ({ navigation }) => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Cart Items */}
         <View style={styles.cartCard}>
-          <Text style={styles.cartTitle}>Cart Items</Text>
+          <View style={styles.cartHeader}>
+            <Text style={styles.cartTitle}>Cart Items ({cartItems.length})</Text>
+            {cartItems.length > 0 && (
+              <TouchableOpacity style={styles.clearCartButton} onPress={clearCart}>
+                <Text style={styles.clearCartText}>Clear All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           
-          {cartItems.map((item) => (
-            <View key={item.id} style={styles.cartItem}>
-              <View style={styles.itemImageContainer}>
-                <Text style={styles.itemImage}>{item.image}</Text>
-              </View>
-              <View style={styles.itemInfo}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price}</Text>
-              </View>
-              <View style={styles.quantityContainer}>
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => updateQuantity(item.id, -1)}
-                >
-                  <Text style={styles.quantityButtonText}>-</Text>
-                </TouchableOpacity>
-                <Text style={styles.quantityValue}>{item.quantity}</Text>
-                <TouchableOpacity
-                  style={styles.quantityButton}
-                  onPress={() => updateQuantity(item.id, 1)}
-                >
-                  <Text style={styles.quantityButtonText}>+</Text>
-                </TouchableOpacity>
-              </View>
+          {cartItems.length === 0 ? (
+            <View style={styles.emptyCartContainer}>
+              <Text style={styles.emptyCartIcon}>🛒</Text>
+              <Text style={styles.emptyCartText}>Your cart is empty</Text>
+              <TouchableOpacity 
+                style={styles.continueShoppingButton}
+                onPress={() => navigation.navigate('MainApp')}
+              >
+                <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+              </TouchableOpacity>
             </View>
-          ))}
+          ) : (
+            cartItems.map((item) => (
+              <View key={item.id} style={styles.cartItem}>
+                <View style={styles.itemImageContainer}>
+                  <Text style={styles.itemImage}>{item.image}</Text>
+                </View>
+                <View style={styles.itemInfo}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemPrice}>{item.price}</Text>
+                </View>
+                <View style={styles.itemActions}>
+                  <View style={styles.quantityContainer}>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => updateQuantity(item.id, -1)}
+                    >
+                      <Text style={styles.quantityButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityValue}>{item.quantity}</Text>
+                    <TouchableOpacity
+                      style={styles.quantityButton}
+                      onPress={() => updateQuantity(item.id, 1)}
+                    >
+                      <Text style={styles.quantityButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.deleteButton}
+                    onPress={() => deleteItem(item.id)}
+                  >
+                    <Text style={styles.deleteButtonText}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
 
           {/* Total */}
-          <View style={styles.totalContainer}>
-            <Text style={styles.totalLabel}>Total:</Text>
-            <Text style={styles.totalAmount}>₹ {total.toLocaleString()}</Text>
-          </View>
+          {cartItems.length > 0 && (
+            <View style={styles.totalContainer}>
+              <Text style={styles.totalLabel}>Total:</Text>
+              <Text style={styles.totalAmount}>₹ {total.toLocaleString()}</Text>
+            </View>
+          )}
 
           {/* Shipping Address */}
-          <View style={styles.addressContainer}>
-            <Text style={styles.addressLabel}>Shipping Address</Text>
-            <TextInput
-              style={styles.addressInput}
-              placeholder="Enter your shipping address"
-              value={shippingAddress}
-              onChangeText={setShippingAddress}
-              multiline
-              numberOfLines={3}
-              placeholderTextColor={colors.darkGray}
-            />
-          </View>
+          {cartItems.length > 0 && (
+            <View style={styles.addressContainer}>
+              <Text style={styles.addressLabel}>Shipping Address</Text>
+              <TextInput
+                style={styles.addressInput}
+                placeholder="Enter your shipping address"
+                value={shippingAddress}
+                onChangeText={setShippingAddress}
+                multiline
+                numberOfLines={3}
+                placeholderTextColor={colors.darkGray}
+              />
+            </View>
+          )}
 
           {/* Customer Care */}
           <View style={styles.customerCareContainer}>
@@ -135,9 +214,11 @@ const Cart = ({ navigation }) => {
           </View>
 
           {/* Place Order Button */}
-          <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
-            <Text style={styles.placeOrderText}>PLACE ORDER</Text>
-          </TouchableOpacity>
+          {cartItems.length > 0 && (
+            <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
+              <Text style={styles.placeOrderText}>PLACE ORDER</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
 

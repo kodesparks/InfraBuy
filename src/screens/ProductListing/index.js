@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, FlatList, Alert } from 'react-native';
 import styles from '../../assets/styles/productListing';
 import { colors } from '../../assets/styles/global';
 
 const ProductListing = ({ navigation, route }) => {
   const { category } = route.params || { name: 'Products' };
   const [searchQuery, setSearchQuery] = useState('');
-
-  const products = [
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [products, setProducts] = useState([
     {
       id: 1,
       name: 'Ambuja Cement',
       originalPrice: '₹320.00',
       discountedPrice: '₹313.60',
       image: '🏗️',
-      isFavorite: false
+      isFavorite: false,
+      category: 'cement'
     },
     {
       id: 2,
@@ -22,7 +24,8 @@ const ProductListing = ({ navigation, route }) => {
       originalPrice: '₹340.00',
       discountedPrice: '₹333.20',
       image: '🏗️',
-      isFavorite: false
+      isFavorite: false,
+      category: 'cement'
     },
     {
       id: 3,
@@ -30,7 +33,8 @@ const ProductListing = ({ navigation, route }) => {
       originalPrice: '₹330.00',
       discountedPrice: '₹323.40',
       image: '🏗️',
-      isFavorite: false
+      isFavorite: false,
+      category: 'cement'
     },
     {
       id: 4,
@@ -38,9 +42,42 @@ const ProductListing = ({ navigation, route }) => {
       originalPrice: '₹350.00',
       discountedPrice: '₹343.00',
       image: '🏗️',
-      isFavorite: false
+      isFavorite: false,
+      category: 'cement'
+    },
+    {
+      id: 5,
+      name: 'TATA TISCON 550SD',
+      originalPrice: '₹8,500.00',
+      discountedPrice: '₹8,330.00',
+      image: '🏗️',
+      isFavorite: false,
+      category: 'iron'
+    },
+    {
+      id: 6,
+      name: 'JSW Steel Rods',
+      originalPrice: '₹8,200.00',
+      discountedPrice: '₹8,036.00',
+      image: '🏗️',
+      isFavorite: false,
+      category: 'iron'
     }
+  ]);
+
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'cement', label: 'Cement' },
+    { id: 'iron', label: 'Iron' },
+    { id: 'favorites', label: 'Favorites' }
   ];
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = selectedFilter === 'all' || 
+                         (selectedFilter === 'favorites' ? product.isFavorite : product.category === selectedFilter);
+    return matchesSearch && matchesFilter;
+  });
 
   const handleProductPress = (product) => {
     navigation.navigate('ProductDetail', { product });
@@ -51,7 +88,22 @@ const ProductListing = ({ navigation, route }) => {
   };
 
   const toggleFavorite = (productId) => {
-    // Handle favorite toggle logic
+    setProducts(prevProducts =>
+      prevProducts.map(product =>
+        product.id === productId
+          ? { ...product, isFavorite: !product.isFavorite }
+          : product
+      )
+    );
+  };
+
+  const handleFilterPress = (filterId) => {
+    setSelectedFilter(filterId);
+    setShowFilters(false);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
   };
 
   const renderProduct = ({ item }) => (
@@ -65,7 +117,9 @@ const ProductListing = ({ navigation, route }) => {
           style={styles.favoriteButton}
           onPress={() => toggleFavorite(item.id)}
         >
-          <Text style={styles.favoriteIcon}>❤️</Text>
+          <Text style={styles.favoriteIcon}>
+            {item.isFavorite ? '❤️' : '🤍'}
+          </Text>
         </TouchableOpacity>
       </View>
       <View style={styles.productInfo}>
@@ -75,6 +129,23 @@ const ProductListing = ({ navigation, route }) => {
           <Text style={styles.discountedPrice}>{item.discountedPrice}</Text>
         </View>
       </View>
+    </TouchableOpacity>
+  );
+
+  const renderFilterItem = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.filterItem,
+        selectedFilter === item.id && styles.filterItemSelected
+      ]}
+      onPress={() => handleFilterPress(item.id)}
+    >
+      <Text style={[
+        styles.filterText,
+        selectedFilter === item.id && styles.filterTextSelected
+      ]}>
+        {item.label}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -103,26 +174,68 @@ const ProductListing = ({ navigation, route }) => {
           <Text style={styles.searchIcon}>🔍</Text>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Search products..."
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholderTextColor={colors.darkGray}
           />
-          <TouchableOpacity style={styles.filterButton}>
+          {searchQuery.length > 0 && (
+            <TouchableOpacity style={styles.clearButton} onPress={clearSearch}>
+              <Text style={styles.clearButtonText}>✕</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => setShowFilters(!showFilters)}
+          >
             <Text style={styles.filterIcon}>☰</Text>
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Filter Options */}
+      {showFilters && (
+        <View style={styles.filterContainer}>
+          <FlatList
+            data={filters}
+            renderItem={renderFilterItem}
+            keyExtractor={(item) => item.id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterList}
+          />
+        </View>
+      )}
+
+      {/* Results Info */}
+      <View style={styles.resultsInfo}>
+        <Text style={styles.resultsText}>
+          {filteredProducts.length} product{filteredProducts.length !== 1 ? 's' : ''} found
+        </Text>
+        {selectedFilter !== 'all' && (
+          <TouchableOpacity onPress={() => handleFilterPress('all')}>
+            <Text style={styles.clearFilterText}>Clear Filter</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Products Grid */}
-      <FlatList
-        data={products}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.productsContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      {filteredProducts.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>🔍</Text>
+          <Text style={styles.emptyText}>No products found</Text>
+          <Text style={styles.emptySubtext}>Try adjusting your search or filter</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredProducts}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          contentContainerStyle={styles.productsContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 };

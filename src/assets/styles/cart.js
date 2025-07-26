@@ -55,11 +55,51 @@ export default StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  cartHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   cartTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
+  },
+  clearCartButton: {
+    backgroundColor: colors.error,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  clearCartText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  emptyCartContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyCartIcon: {
+    fontSize: 60,
+    marginBottom: 15,
+  },
+  emptyCartText: {
+    fontSize: 18,
+    color: colors.darkGray,
     marginBottom: 20,
+  },
+  continueShoppingButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  continueShoppingText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
   },
   cartItem: {
     flexDirection: 'row',
@@ -93,9 +133,14 @@ export default StyleSheet.create({
     fontSize: 14,
     color: colors.darkGray,
   },
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginRight: 15,
   },
   quantityButton: {
     width: 30,
@@ -117,6 +162,17 @@ export default StyleSheet.create({
     color: colors.text,
     minWidth: 30,
     textAlign: 'center',
+  },
+  deleteButton: {
+    width: 35,
+    height: 35,
+    borderRadius: 17.5,
+    backgroundColor: colors.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonText: {
+    fontSize: 16,
   },
   totalContainer: {
     flexDirection: 'row',
