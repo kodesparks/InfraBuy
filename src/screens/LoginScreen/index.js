@@ -1,46 +1,114 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import styles from '../../assets/styles/login';
 
 const LoginScreen = ({ navigation }) => {
-  const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = () => {
-    if (!mobile || !otp) {
-      setError('Please enter mobile number and OTP');
+    if (!loginId || !password) {
+      setError('Please enter Login ID and Password');
       return;
     }
-    // Simulate OTP verification (replace with API call)
-    Alert.alert('Success', 'Logged in!');
-    navigation.navigate('Home'); // Navigate to HomeScreen (to be created)
+    // Simulate login verification (replace with API call)
+    navigation.navigate('MainApp');
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Mobile Number"
-        value={mobile}
-        onChangeText={setMobile}
-        keyboardType="phone-pad"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="OTP"
-        value={otp}
-        onChangeText={setOtp}
-        keyboardType="numeric"
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
-        <Text style={styles.link}>Need an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.profileIcon}>
+            <Text style={styles.profileIconText}>👤</Text>
+          </View>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>🔔</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>🛒</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Background with Content */}
+      <View style={styles.backgroundImage}>
+        <View style={styles.content}>
+          <Text style={styles.title}>Sign In</Text>
+          
+          <View style={styles.inputContainer}>
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>👤</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Login ID"
+                value={loginId}
+                onChangeText={setLoginId}
+                placeholderTextColor="#666666"
+              />
+            </View>
+            
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor="#666666"
+              />
+            </View>
+          </View>
+
+          <View style={styles.rememberForgotContainer}>
+            <TouchableOpacity 
+              style={styles.checkboxContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+            >
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Text style={styles.checkmarkText}>✓</Text>}
+              </View>
+              <Text style={styles.rememberText}>Remember me</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity>
+              <Text style={styles.forgotPassword}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Sign In</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <Text style={styles.link}>Don't have an account?</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={[styles.navIcon, styles.navIconActive]}>🏠</Text>
+          <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={styles.navIcon}>🛍️</Text>
+          <Text style={styles.navText}>Shop</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 

@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, SafeAreaView } from 'react-native';
 import styles from '../../assets/styles/signup';
 
 const SignupScreen = ({ navigation }) => {
-  const [mobile, setMobile] = useState('');
   const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [loginId, setLoginId] = useState('');
+  const [address, setAddress] = useState('');
   const [error, setError] = useState('');
 
   const handleSignup = () => {
-    if (!mobile || !name) {
-      setError('Please enter mobile number and name');
+    if (!name || !phone || !loginId || !address) {
+      setError('Please fill in all fields');
       return;
     }
     // Simulate signup (replace with API call)
@@ -18,28 +20,101 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <TextInput
-        style={styles.input}
-        placeholder="Mobile Number"
-        value={mobile}
-        onChangeText={setMobile}
-        keyboardType="phone-pad"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Full Name"
-        value={name}
-        onChangeText={setName}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignup}>
-        <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={styles.link}>Already have an account? Log in</Text>
-      </TouchableOpacity>
-    </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <View style={styles.profileIcon}>
+            <Text style={styles.profileIconText}>👤</Text>
+          </View>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>💬</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>🔔</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIcon}>
+            <Text style={styles.headerIconText}>🛒</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.title}>Create Account</Text>
+        
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputIcon}>👤</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor="#666666"
+            />
+          </View>
+          
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputIcon}>📞</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Phone number"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholderTextColor="#666666"
+            />
+          </View>
+          
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputIcon}>🆔</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Login ID"
+              value={loginId}
+              onChangeText={setLoginId}
+              placeholderTextColor="#666666"
+            />
+          </View>
+          
+          <View style={styles.inputWrapper}>
+            <Text style={styles.inputIcon}>📍</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Address"
+              value={address}
+              onChangeText={setAddress}
+              placeholderTextColor="#666666"
+            />
+          </View>
+        </View>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        
+        <TouchableOpacity style={styles.button} onPress={handleSignup}>
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.link}>Already have an account? Sign in</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={[styles.navIcon, styles.navIconActive]}>🏠</Text>
+          <Text style={[styles.navText, styles.navTextActive]}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem}>
+          <Text style={styles.navIcon}>🛍️</Text>
+          <Text style={styles.navText}>Shop</Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 };
 
