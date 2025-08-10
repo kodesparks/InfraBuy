@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../assets/styles/cart';
 import OrderConfirmation from '../../components/OrderConfirmation';
 import { colors } from '../../assets/styles/global';
@@ -105,31 +107,19 @@ const Cart = ({ navigation }) => {
   const total = calculateTotal();
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>←</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.headerIconText}>🔔</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Text style={styles.headerIconText}>🛒</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Cart Items */}
         <View style={styles.cartCard}>
           <View style={styles.cartHeader}>
             <Text style={styles.cartTitle}>Cart Items ({cartItems.length})</Text>
             {cartItems.length > 0 && (
               <TouchableOpacity style={styles.clearCartButton} onPress={clearCart}>
+                <Icon name="trash-2" size={16} color="white" />
                 <Text style={styles.clearCartText}>Clear All</Text>
               </TouchableOpacity>
             )}
@@ -137,14 +127,20 @@ const Cart = ({ navigation }) => {
           
           {cartItems.length === 0 ? (
             <View style={styles.emptyCartContainer}>
-              <Text style={styles.emptyCartIcon}>🛒</Text>
+              <Icon name="shopping-cart" size={60} color={colors.darkGray} />
               <Text style={styles.emptyCartText}>Your cart is empty</Text>
-              <TouchableOpacity 
+              <LinearGradient
+                colors={['#3B82F6', '#1D4ED8']}
                 style={styles.continueShoppingButton}
-                onPress={() => navigation.navigate('MainApp')}
               >
-                <Text style={styles.continueShoppingText}>Continue Shopping</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.continueShoppingButtonInner}
+                  onPress={() => navigation.navigate('MainApp')}
+                >
+                  <Icon name="shopping-bag" size={20} color="white" />
+                  <Text style={styles.continueShoppingText}>Continue Shopping</Text>
+                </TouchableOpacity>
+              </LinearGradient>
             </View>
           ) : (
             cartItems.map((item) => (
@@ -162,21 +158,21 @@ const Cart = ({ navigation }) => {
                       style={styles.quantityButton}
                       onPress={() => updateQuantity(item.id, -1)}
                     >
-                      <Text style={styles.quantityButtonText}>-</Text>
+                      <Icon name="minus" size={16} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={styles.quantityValue}>{item.quantity}</Text>
                     <TouchableOpacity
                       style={styles.quantityButton}
                       onPress={() => updateQuantity(item.id, 1)}
                     >
-                      <Text style={styles.quantityButtonText}>+</Text>
+                      <Icon name="plus" size={16} color={colors.text} />
                     </TouchableOpacity>
                   </View>
                   <TouchableOpacity 
                     style={styles.deleteButton}
                     onPress={() => deleteItem(item.id)}
                   >
-                    <Text style={styles.deleteButtonText}>🗑️</Text>
+                    <Icon name="trash-2" size={16} color="white" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -202,22 +198,24 @@ const Cart = ({ navigation }) => {
                 onChangeText={setShippingAddress}
                 multiline
                 numberOfLines={3}
-                placeholderTextColor={colors.darkGray}
               />
             </View>
           )}
 
-          {/* Customer Care */}
-          <View style={styles.customerCareContainer}>
-            <Text style={styles.customerCareIcon}>📞</Text>
-            <Text style={styles.customerCareText}>Customer Care: +91 98765 43210</Text>
-          </View>
-
           {/* Place Order Button */}
           {cartItems.length > 0 && (
-            <TouchableOpacity style={styles.placeOrderButton} onPress={handlePlaceOrder}>
-              <Text style={styles.placeOrderText}>PLACE ORDER</Text>
-            </TouchableOpacity>
+            <LinearGradient
+              colors={['#10B981', '#059669']}
+              style={styles.placeOrderButton}
+            >
+              <TouchableOpacity 
+                style={styles.placeOrderButtonInner}
+                onPress={handlePlaceOrder}
+              >
+                <Icon name="check-circle" size={20} color="white" />
+                <Text style={styles.placeOrderText}>Place Order</Text>
+              </TouchableOpacity>
+            </LinearGradient>
           )}
         </View>
       </ScrollView>
@@ -227,8 +225,13 @@ const Cart = ({ navigation }) => {
         visible={showConfirmation}
         onClose={() => setShowConfirmation(false)}
         onContinueShopping={handleContinueShopping}
+        orderDetails={{
+          items: cartItems,
+          total: total,
+          address: shippingAddress
+        }}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

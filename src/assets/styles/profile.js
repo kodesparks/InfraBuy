@@ -1,5 +1,5 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { colors, typography, spacing, borderRadius } from './global';
 
 const { width, height } = Dimensions.get('window');
 
@@ -8,78 +8,57 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: Platform.OS === 'ios' ? 50 : 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 24,
-    color: colors.white,
-    fontWeight: 'bold',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginLeft: 20,
-  },
-  headerIconText: {
-    fontSize: 20,
-    color: colors.white,
-  },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.md,
+  },
+  scrollContent: {
+    paddingBottom: spacing.xxl,
   },
   profileSection: {
     alignItems: 'center',
-    paddingVertical: 30,
+    paddingVertical: spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
-    marginBottom: 20,
+    borderBottomColor: colors.border,
+    marginBottom: spacing.lg,
   },
   profileImageContainer: {
     width: 100,
     height: 100,
     borderRadius: 50,
-    backgroundColor: colors.lightGray,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 15,
-  },
-  profileImage: {
-    fontSize: 50,
+    marginBottom: spacing.md,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 5,
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
   },
   userEmail: {
     fontSize: 16,
-    color: colors.darkGray,
-    marginBottom: 5,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   userPhone: {
     fontSize: 16,
-    color: colors.darkGray,
+    color: colors.textSecondary,
   },
   menuSection: {
     backgroundColor: colors.white,
-    borderRadius: 12,
-    marginBottom: 20,
-    shadowColor: '#000',
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    shadowColor: colors.black,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -87,41 +66,54 @@ export default StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: 'hidden',
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
+    borderBottomColor: '#F3F4F6',
   },
-  menuItemLeft: {
-    flexDirection: 'row',
+  menuItemIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EFF6FF',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginRight: spacing.md,
   },
-  menuIcon: {
-    fontSize: 24,
-    marginRight: 15,
-  },
-  menuTitle: {
+  menuItemTitle: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
     fontWeight: '500',
-  },
-  menuArrow: {
-    fontSize: 16,
-    color: colors.darkGray,
+    flex: 1,
   },
   logoutButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 15,
-    borderRadius: 12,
+    backgroundColor: '#EF4444',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    shadowColor: '#EF4444',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
   },
-  logoutText: {
+  logoutIcon: {
+    marginRight: spacing.sm,
+  },
+  logoutButtonText: {
     color: colors.white,
     fontSize: 18,
     fontWeight: '600',

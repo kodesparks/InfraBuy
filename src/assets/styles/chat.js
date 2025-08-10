@@ -8,49 +8,7 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: Platform.OS === 'ios' ? 50 : 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 24,
-    color: colors.white,
-    fontWeight: 'bold',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.white,
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: colors.white,
-    opacity: 0.8,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginLeft: 20,
-  },
-  headerIconText: {
-    fontSize: 20,
-    color: colors.white,
-  },
+
   chatContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,

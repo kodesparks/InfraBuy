@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../assets/styles/profile';
 
 const ProfileScreen = ({ navigation }) => {
@@ -14,37 +15,37 @@ const ProfileScreen = ({ navigation }) => {
     {
       id: 1,
       title: 'Personal Information',
-      icon: '👤',
+      icon: 'user',
       action: () => Alert.alert('Info', 'Edit personal information')
     },
     {
       id: 2,
       title: 'Order History',
-      icon: '📋',
+      icon: 'file-text',
       action: () => Alert.alert('Orders', 'View order history')
     },
     {
       id: 3,
       title: 'Saved Addresses',
-      icon: '📍',
+      icon: 'map-pin',
       action: () => Alert.alert('Addresses', 'Manage saved addresses')
     },
     {
       id: 4,
       title: 'Payment Methods',
-      icon: '💳',
+      icon: 'credit-card',
       action: () => Alert.alert('Payment', 'Manage payment methods')
     },
     {
       id: 5,
       title: 'Settings',
-      icon: '⚙️',
+      icon: 'settings',
       action: () => Alert.alert('Settings', 'App settings')
     },
     {
       id: 6,
       title: 'Help & Support',
-      icon: '❓',
+      icon: 'help-circle',
       action: () => Alert.alert('Support', 'Contact support team')
     }
   ];
@@ -65,29 +66,16 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>←</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.headerIconText}>🔔</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
-            <Text style={styles.headerIconText}>🛒</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Profile Section */}
         <View style={styles.profileSection}>
           <View style={styles.profileImageContainer}>
-            <Text style={styles.profileImage}>👤</Text>
+            <Icon name="user" size={50} color="#6B7280" />
           </View>
           <Text style={styles.userName}>{user.name}</Text>
           <Text style={styles.userEmail}>{user.email}</Text>
@@ -102,21 +90,22 @@ const ProfileScreen = ({ navigation }) => {
               style={styles.menuItem}
               onPress={item.action}
             >
-              <View style={styles.menuItemLeft}>
-                <Text style={styles.menuIcon}>{item.icon}</Text>
-                <Text style={styles.menuTitle}>{item.title}</Text>
+              <View style={styles.menuItemIconContainer}>
+                <Icon name={item.icon} size={22} color="#3B82F6" />
               </View>
-              <Text style={styles.menuArrow}>▶</Text>
+              <Text style={styles.menuItemTitle}>{item.title}</Text>
+              <Icon name="chevron-right" size={20} color="#9CA3AF" />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>Logout</Text>
+          <Icon name="log-out" size={20} color="white" style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

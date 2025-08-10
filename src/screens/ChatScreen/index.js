@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, TextInput, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, FlatList, Alert } from 'react-native';
 import styles from '../../assets/styles/chat';
 import { colors } from '../../assets/styles/global';
 
@@ -83,28 +83,7 @@ const ChatScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>←</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Customer Support</Text>
-          <Text style={styles.headerSubtitle}>Online</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Text style={styles.headerIconText}>📞</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
-            <Text style={styles.headerIconText}>🛒</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <View style={styles.container}>
       {/* Chat Messages */}
       <FlatList
         data={chatHistory}
@@ -147,7 +126,7 @@ const ChatScreen = ({ navigation }) => {
           <Text style={styles.sendButtonText}>📤</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -8,35 +8,7 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: Platform.OS === 'ios' ? 50 : 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 24,
-    color: colors.white,
-    fontWeight: 'bold',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginLeft: 20,
-  },
-  headerIconText: {
-    fontSize: 20,
-    color: colors.white,
-  },
+
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -157,7 +129,6 @@ export default StyleSheet.create({
   },
   productsContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   productCard: {
     width: (width - 60) / 2,

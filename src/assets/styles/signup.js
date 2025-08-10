@@ -8,42 +8,7 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: Platform.OS === 'ios' ? 50 : 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  profileIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileIconText: {
-    fontSize: 20,
-    color: colors.primary,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginLeft: 20,
-  },
-  headerIconText: {
-    fontSize: 20,
-    color: colors.white,
-  },
+
   content: {
     flex: 1,
     justifyContent: 'center',
@@ -74,7 +39,7 @@ export default StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
+    color: colors.darkGray,
     paddingVertical: 0,
   },
   button: {

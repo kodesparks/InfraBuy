@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList } from 'react-native';
 import styles from '../../assets/styles/shop';
 
 const ShopScreen = ({ navigation }) => {
@@ -73,27 +73,7 @@ const ShopScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity style={styles.profileIcon} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.profileIconText}>👤</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Chat')}>
-            <Text style={styles.headerIconText}>💬</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Notifications')}>
-            <Text style={styles.headerIconText}>🔔</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} onPress={handleCartPress}>
-            <Text style={styles.headerIconText}>🛒</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <View style={styles.container}>
       {/* Content */}
       <View style={styles.content}>
         <Text style={styles.shopTitle}>Shop</Text>
@@ -108,7 +88,7 @@ const ShopScreen = ({ navigation }) => {
           contentContainerStyle={styles.categoriesContainer}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

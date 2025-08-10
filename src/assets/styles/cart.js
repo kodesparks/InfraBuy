@@ -8,39 +8,14 @@ export default StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    backgroundColor: '#4A5568',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    paddingTop: Platform.OS === 'ios' ? 50 : 15,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  backButton: {
-    fontSize: 24,
-    color: colors.white,
-    fontWeight: 'bold',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  headerIcon: {
-    marginLeft: 20,
-  },
-  headerIconText: {
-    fontSize: 20,
-    color: colors.white,
-  },
+
   content: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  scrollContent: {
+    paddingBottom: 100,
   },
   cartCard: {
     backgroundColor: colors.white,
@@ -69,8 +44,11 @@ export default StyleSheet.create({
   clearCartButton: {
     backgroundColor: colors.error,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   clearCartText: {
     color: colors.white,
@@ -81,20 +59,23 @@ export default StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 40,
   },
-  emptyCartIcon: {
-    fontSize: 60,
-    marginBottom: 15,
-  },
   emptyCartText: {
     fontSize: 18,
     color: colors.darkGray,
     marginBottom: 20,
+    marginTop: 10,
   },
   continueShoppingButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  continueShoppingButtonInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    gap: 8,
   },
   continueShoppingText: {
     color: colors.white,
@@ -143,18 +124,15 @@ export default StyleSheet.create({
     marginRight: 15,
   },
   quantityButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.lightGray,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginHorizontal: 5,
-  },
-  quantityButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   quantityValue: {
     fontSize: 16,
@@ -164,15 +142,12 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
   deleteButton: {
-    width: 35,
-    height: 35,
-    borderRadius: 17.5,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: colors.error,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  deleteButtonText: {
-    fontSize: 16,
   },
   totalContainer: {
     flexDirection: 'row',
@@ -215,28 +190,17 @@ export default StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  customerCareContainer: {
+  placeOrderButton: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 30,
+  },
+  placeOrderButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
-  },
-  customerCareIcon: {
-    fontSize: 20,
-    marginRight: 10,
-  },
-  customerCareText: {
-    fontSize: 16,
-    color: colors.darkGray,
-  },
-  placeOrderButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: 15,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 30,
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
   },
   placeOrderText: {
     color: colors.white,

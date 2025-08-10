@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, ScrollView, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, FlatList, Alert } from 'react-native';
 import styles from '../../assets/styles/notifications';
 
 const NotificationsScreen = ({ navigation }) => {
@@ -95,27 +95,7 @@ const NotificationsScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.backButton}>←</Text>
-          </TouchableOpacity>
-        </View>
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.headerIcon} onPress={handleMarkAllRead}>
-            <Text style={styles.headerIconText}>✓</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} onPress={() => navigation.navigate('Cart')}>
-            <Text style={styles.headerIconText}>🛒</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
+    <View style={styles.container}>
       {/* Notifications List */}
       <FlatList
         data={notifications}
@@ -124,7 +104,7 @@ const NotificationsScreen = ({ navigation }) => {
         contentContainerStyle={styles.notificationsContainer}
         showsVerticalScrollIndicator={false}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
