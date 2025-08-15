@@ -15,6 +15,8 @@ import NotificationsScreen from '../screens/NotificationsScreen/index';
 import ChatScreen from '../screens/ChatScreen/index';
 import TrackingScreen from '../screens/TrackingScreen/index';
 import AppHeader from '../components/common/AppHeader';
+import { useAuth } from '../context/AuthContext';
+import { ActivityIndicator } from 'react-native';
 
 const Stack = createStackNavigator();
 
@@ -475,9 +477,20 @@ const TrackingScreenWrapper = ({ navigation, route }) => (
 );
 
 const AppNavigator = () => {
+  const { isLoggedIn, isLoading } = useAuth();
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#723FED' }}>
+        <ActivityIndicator size="large" color="#FFFFFF" />
+      </View>
+    );
+  }
+
   return (
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName={isLoggedIn ? "MainApp" : "Login"}
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="Login" component={LoginScreen} />

@@ -1,110 +1,257 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import { registerUser } from '../../services/api';
 
 const SignupScreen = ({ navigation }) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    address: ''
+  });
+  
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = () => {
-    if (!name || !email || !phone || !password) {
-      Alert.alert('Error', 'Please fill in all fields');
-      return;
+  // Basic validation
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter your full name'
+      });
+      return false;
     }
-    // Simulate signup (replace with API call)
-    Alert.alert('Success', 'Account created! Please log in.');
-    navigation.navigate('Login');
+    if (!formData.email.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter your email'
+      });
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter your phone number'
+      });
+      return false;
+    }
+    if (!formData.password) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter a password'
+      });
+      return false;
+    }
+    if (!formData.address.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter your address'
+      });
+      return false;
+    }
+    return true;
+  };
+
+  // Handle signup
+  const handleSignup = async () => {
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    try {
+      const userData = {
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: `+91${formData.phone.trim()}`, // Add +91 prefix for India
+        password: formData.password,
+        address: formData.address.trim()
+      };
+
+      const result = await registerUser(userData);
+      
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success!',
+          text2: 'Account created successfully!'
+        });
+        
+        // Navigate to login after a short delay
+        setTimeout(() => {
+          navigation.navigate('Login');
+        }, 1500);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Signup Failed',
+          text2: result.error?.message || 'Failed to create account'
+        });
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Something went wrong. Please try again.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <LinearGradient
-      colors={['#723FED', '#3B58EB']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.container}
+    <KeyboardAvoidingView 
+      style={styles.container} 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      {/* Logo Section */}
-      <View style={styles.logoSection}>
-        <Text style={styles.logo}>infraXpert</Text>
-        <Text style={styles.tagline}>Building Materials Expert</Text>
-      </View>
+      <LinearGradient
+        colors={['#723FED', '#3B58EB']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.gradient}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <Text style={styles.logo}>infraXpert</Text>
+            <Text style={styles.tagline}>Building Materials Expert</Text>
+          </View>
 
-      {/* Signup Form */}
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Create Account</Text>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            placeholderTextColor="#9CA3AF"
-            value={name}
-            onChangeText={setName}
-          />
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email address"
-            placeholderTextColor="#9CA3AF"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Phone number"
-            placeholderTextColor="#9CA3AF"
-            value={phone}
-            onChangeText={setPhone}
-            keyboardType="phone-pad"
-          />
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#9CA3AF"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-          />
-        </View>
+          {/* Signup Form */}
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Create Account</Text>
+            
+            {/* Full Name Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Full Name"
+                placeholderTextColor="#9CA3AF"
+                value={formData.name}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, name: value }))}
+                autoCapitalize="words"
+                editable={!isLoading}
+              />
+            </View>
+            
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email address"
+                placeholderTextColor="#9CA3AF"
+                value={formData.email}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, email: value }))}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                editable={!isLoading}
+              />
+            </View>
+            
+            {/* Phone Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Phone number (10 digits)"
+                placeholderTextColor="#9CA3AF"
+                value={formData.phone}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, phone: value }))}
+                keyboardType="phone-pad"
+                maxLength={10}
+                editable={!isLoading}
+              />
+            </View>
 
-        <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
-          <Text style={styles.signupButtonText}>Create Account</Text>
-        </TouchableOpacity>
+            {/* Address Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Address"
+                placeholderTextColor="#9CA3AF"
+                value={formData.address}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, address: value }))}
+                multiline
+                numberOfLines={2}
+                editable={!isLoading}
+              />
+            </View>
+            
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#9CA3AF"
+                value={formData.password}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, password: value }))}
+                secureTextEntry
+                editable={!isLoading}
+              />
+            </View>
 
-        <View style={styles.loginContainer}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.loginLink}>Sign In</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            {/* Signup Button */}
+            <TouchableOpacity 
+              style={[styles.signupButton, isLoading && styles.signupButtonDisabled]} 
+              onPress={handleSignup}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#3B58EB" />
+              ) : (
+                <Text style={styles.signupButtonText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
 
-      {/* Footer */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Trusted by construction professionals across India
-        </Text>
-      </View>
-    </LinearGradient>
+            {/* Login Link */}
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
+                <Text style={styles.loginLink}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Footer */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Trusted by construction professionals across India
+            </Text>
+          </View>
+        </ScrollView>
+      </LinearGradient>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'space-between',
     paddingTop: 80,
     paddingBottom: 40,
@@ -140,7 +287,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 15,
   },
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
@@ -149,6 +296,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 0,
+    color: colors.white,
   },
   signupButton: {
     backgroundColor: colors.white,
@@ -156,6 +304,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 10,
+  },
+  signupButtonDisabled: {
+    opacity: 0.7,
   },
   signupButtonText: {
     color: '#3B58EB',

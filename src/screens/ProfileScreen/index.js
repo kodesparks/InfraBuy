@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 import styles from '../../assets/styles/profile';
+import { useAuth } from '../../context/AuthContext';
 
 const ProfileScreen = ({ navigation }) => {
-  const [user] = useState({
+  const { user, logout } = useAuth();
+  
+  // Use real user data from AuthContext, fallback to dummy data
+  const userData = user || {
     name: 'John Doe',
     email: 'john.doe@example.com',
     phone: '+91 98765 43210',
     address: '123 Construction Street, Mumbai, Maharashtra'
-  });
+  };
 
   const menuItems = [
     {
@@ -59,7 +64,23 @@ const ProfileScreen = ({ navigation }) => {
         { 
           text: 'Logout', 
           style: 'destructive',
-          onPress: () => navigation.navigate('Login')
+          onPress: async () => {
+            try {
+              await logout();
+              Toast.show({
+                type: 'success',
+                text1: 'Logged Out',
+                text2: 'You have been successfully logged out'
+              });
+              navigation.navigate('Login');
+            } catch (error) {
+              Toast.show({
+                type: 'error',
+                text1: 'Logout Failed',
+                text2: 'Something went wrong. Please try again.'
+              });
+            }
+          }
         }
       ]
     );
@@ -77,9 +98,9 @@ const ProfileScreen = ({ navigation }) => {
           <View style={styles.profileImageContainer}>
             <Icon name="user" size={50} color="#6B7280" />
           </View>
-          <Text style={styles.userName}>{user.name}</Text>
-          <Text style={styles.userEmail}>{user.email}</Text>
-          <Text style={styles.userPhone}>{user.phone}</Text>
+          <Text style={styles.userName}>{userData.name}</Text>
+          <Text style={styles.userEmail}>{userData.email}</Text>
+          <Text style={styles.userPhone}>{userData.phone}</Text>
         </View>
 
         {/* Menu Items */}
