@@ -3,9 +3,17 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ImageBackground }
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
+import PincodeModal from '../../components/common/PincodeModal';
 
 const HomeScreen = ({ navigation }) => {
-  const { cartCount, notificationCount, addToCart } = useAppContext();
+  const { 
+    cartCount, 
+    notificationCount, 
+    addToCart,
+    showPincodeModal,
+    setShowPincodeModal,
+    handlePincodeSet,
+  } = useAppContext();
   
   const categories = [
     {
@@ -82,6 +90,13 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Initial Pincode Modal - Only shows when no pincode is saved */}
+      <PincodeModal
+        visible={showPincodeModal}
+        onClose={() => setShowPincodeModal(false)}
+        onPincodeSet={handlePincodeSet}
+      />
     </View>
   );
 };

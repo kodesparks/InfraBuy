@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
@@ -10,6 +10,8 @@ const ProductDetail = ({ navigation, route }) => {
   const [detailsExpanded, setDetailsExpanded] = useState(true);
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
   const [deliveryExpanded, setDeliveryExpanded] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const flatListRef = useRef(null);
 
   const productData = product || {
     name: 'ACC Cement',
@@ -18,6 +20,12 @@ const ProductDetail = ({ navigation, route }) => {
     price: 395,
     unit: 'per 50kg bag',
     image: require('../../assets/images/cement.png'),
+    images: [
+      require('../../assets/images/cement.png'),
+      require('../../assets/images/cement.png'),
+      require('../../assets/images/cement.png'),
+      require('../../assets/images/cement.png'),
+    ],
     inStock: true,
     brand: 'ACC Limited',
     weight: '50 kg per bag',
@@ -36,6 +44,22 @@ const ProductDetail = ({ navigation, route }) => {
 
   const handleAddToCart = () => {
     navigation.navigate('Cart');
+  };
+
+  const handleImageScroll = (event) => {
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const imageWidth = Dimensions.get('window').width - (spacing.md * 2);
+    const index = Math.round(contentOffset / imageWidth);
+    setCurrentImageIndex(index);
+  };
+
+  const goToImage = (index) => {
+    const imageWidth = Dimensions.get('window').width - (spacing.md * 2);
+    flatListRef.current?.scrollToOffset({
+      offset: index * imageWidth,
+      animated: true,
+    });
+    setCurrentImageIndex(index);
   };
 
   // Safety check function to ensure price is always a valid number
@@ -67,7 +91,42 @@ const ProductDetail = ({ navigation, route }) => {
 
   const renderProductImage = () => (
     <View style={styles.productImageContainer}>
-      <Image source={productData.image} style={styles.productImage} />
+      <FlatList
+        ref={flatListRef}
+        data={productData.images || [productData.image]}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleImageScroll}
+        scrollEventThrottle={16}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.imageSlide}>
+            <Image source={item} style={styles.productImage} />
+          </View>
+        )}
+      />
+      
+      {/* Image Counter */}
+      <View style={styles.imageCounter}>
+        <Text style={styles.imageCounterText}>
+          {currentImageIndex + 1} / {productData.images?.length || 1}
+        </Text>
+      </View>
+      
+      {/* Navigation Dots */}
+      <View style={styles.dotsContainer}>
+        {(productData.images || [productData.image]).map((_, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.dot,
+              currentImageIndex === index && styles.activeDot
+            ]}
+            onPress={() => goToImage(index)}
+          />
+        ))}
+      </View>
     </View>
   );
 
@@ -97,6 +156,8 @@ const ProductDetail = ({ navigation, route }) => {
           </View>
         </View>
         
+        <View style={styles.quantitySectionContainer}>
+
         <View style={styles.quantitySection}>
           <Text style={styles.quantityLabel}>Number of Bags</Text>
           <View style={styles.quantitySelector}>
@@ -104,16 +165,31 @@ const ProductDetail = ({ navigation, route }) => {
               style={styles.quantityButton}
               onPress={() => handleQuantityChange(-1)}
             >
-              <Icon name="minus" size={20} color={colors.textSecondary} />
+              <LinearGradient
+                colors={['#723FED', '#3B58EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.quantityButtonGradient}
+              >
+                <Icon name="minus" size={20} color={colors.white} />
+              </LinearGradient>
             </TouchableOpacity>
             <Text style={styles.quantityValue}>{quantity}</Text>
             <TouchableOpacity 
-              style={[styles.quantityButton, styles.quantityButtonActive]}
+              style={styles.quantityButton}
               onPress={() => handleQuantityChange(1)}
             >
-              <Icon name="plus" size={20} color={colors.white} />
+              <LinearGradient
+                colors={['#723FED', '#3B58EB']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.quantityButtonGradient}
+              >
+                <Icon name="plus" size={20} color={colors.white} />
+              </LinearGradient>
             </TouchableOpacity>
           </View>
+        </View>
           <View style={styles.totalSection}>
             <Text style={styles.totalAmount}>
               ₹{isNaN(currentTotal) ? '0' : currentTotal.toLocaleString()}
@@ -308,10 +384,55 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   
+  imageSlide: {
+    width: Dimensions.get('window').width - (spacing.md * 2),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
   productImage: {
     width: 250,
     height: 250,
     resizeMode: 'contain',
+  },
+  
+  imageCounter: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+  },
+  
+  imageCounterText: {
+    color: colors.white,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  
+  dotsContainer: {
+    position: 'absolute',
+    bottom: spacing.md,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  
+  activeDot: {
+    backgroundColor: colors.white,
+    width: 24,
   },
   
   productInfoContainer: {
@@ -389,11 +510,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
-  
-  quantitySection: {
+
+  quantitySectionContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  quantitySection: {
+    flexDirection: 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   
   quantityLabel: {
@@ -414,13 +542,17 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   
-  quantityButtonActive: {
-    backgroundColor: '#3B82F6',
+  quantityButtonGradient: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   
   quantityValue: {
@@ -449,13 +581,13 @@ const styles = StyleSheet.create({
   
   addToCartButton: {
     marginBottom: spacing.lg,
-    borderRadius: borderRadius.md,
+    borderRadius: 12, // Semi-rounded design like ProductListing
     overflow: 'hidden',
     marginHorizontal: spacing.lg,
   },
   
   addToCartGradient: {
-    paddingVertical: spacing.md,
+    paddingVertical: 16, // Same padding as ProductListing buttons
     alignItems: 'center',
     justifyContent: 'center',
   },

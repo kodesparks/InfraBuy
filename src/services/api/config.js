@@ -4,7 +4,7 @@ import { refreshToken } from './loginService';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://10.0.2.2:5000', // Remove /api from base URL
+  BASE_URL: 'http://10.0.2.2:5000',
   TIMEOUT: 30000,
 };
 

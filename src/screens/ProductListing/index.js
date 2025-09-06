@@ -1,12 +1,29 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
+import { useAppContext } from '../../context/AppContext';
+import PincodeModal from '../../components/common/PincodeModal';
 
 const ProductListing = ({ navigation, route }) => {
   const { category } = route.params || { name: 'Products' };
   const [selectedCementType, setSelectedCementType] = useState('OPC');
   const [selectedGrade, setSelectedGrade] = useState('53G');
+  const [favorites, setFavorites] = useState(new Set());
+  const [showPincodeModal, setShowPincodeModal] = useState(false);
+  
+  // Get delivery info from context
+  const { 
+    userPincode, 
+    getDeliveryInfoForCategory, 
+    handlePincodeSet,
+    calculateProductPrice,
+  } = useAppContext();
+
+  const handleChangePincode = () => {
+    setShowPincodeModal(true);
+  };
 
   const cementTypes = ['OPC', 'PPC'];
   const grades = ['43G', '53G', '53GS'];
@@ -68,6 +85,18 @@ const ProductListing = ({ navigation, route }) => {
     navigation.navigate('Cart');
   };
 
+  const toggleFavorite = (productId) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(productId)) {
+        newFavorites.delete(productId);
+      } else {
+        newFavorites.add(productId);
+      }
+      return newFavorites;
+    });
+  };
+
   const renderProductCard = (product) => (
     <TouchableOpacity
       key={product.id}
@@ -76,11 +105,18 @@ const ProductListing = ({ navigation, route }) => {
     >
       <View style={styles.productImageContainer}>
         <Image source={product.image} style={styles.productImage} />
-        {product.inStock && (
-          <View style={styles.stockBadge}>
-            <Text style={styles.stockText}>In Stock</Text>
-          </View>
-        )}
+        {/* Favorite Heart Icon */}
+        <TouchableOpacity
+          style={styles.favoriteButton}
+          onPress={() => toggleFavorite(product.id)}
+        >
+          <Text style={[
+            styles.favoriteIcon,
+            favorites.has(product.id) && styles.favoriteIconActive
+          ]}>
+            {favorites.has(product.id) ? '❤️' : '🤍'}
+          </Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{product.name}</Text>
@@ -88,23 +124,64 @@ const ProductListing = ({ navigation, route }) => {
           <Text style={styles.productType}>{product.type} {product.grade}</Text>
         </View>
         <View style={styles.priceContainer}>
-          <Text style={styles.productPrice}>₹{product.price}</Text>
+          <Text style={styles.productPrice}>
+            ₹{calculateProductPrice(product.price, category.name)}
+          </Text>
           <Text style={styles.productUnit}>{product.unit}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
+  const renderDeliveryLocation = () => {
+    const deliveryInfo = getDeliveryInfoForCategory(category.name);
+    
+    return (
+      <View style={styles.deliveryLocationSection}>
+        <View style={styles.deliveryLocationHeader}>
+          <View style={styles.deliveryLocationIcon}>
+            <Icon name="map-pin" size={16} color="#723FED" />
+          </View>
+          <View style={styles.deliveryLocationInfo}>
+            <Text style={styles.deliveryLocationTitle}>Delivery Location</Text>
+            <Text style={styles.deliveryLocationPincode}>{userPincode || 'Not set'}</Text>
+            {deliveryInfo && (
+              <Text style={styles.deliveryTimeText}>{deliveryInfo.deliveryTime}</Text>
+            )}
+          </View>
+          <TouchableOpacity 
+            style={styles.changeButton}
+            onPress={handleChangePincode}
+          >
+            <LinearGradient
+              colors={['#723FED', '#3B58EB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.changeButtonGradient}
+            >
+              <Text style={styles.changeButtonText}>Change</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   const renderFilterButton = (items, selectedItem, onSelect, title) => (
-    <View style={styles.filterSection}>
+    <View style={[
+      styles.filterSection,
+      title === 'Grade' && styles.filterSectionNoPadding
+    ]}>
       <Text style={styles.filterTitle}>{title}</Text>
-      <View style={styles.filterButtons}>
+      <View style={styles.filterButtons }>
         {items.map(item => (
           <TouchableOpacity
             key={item}
             style={[
               styles.filterButton,
-              selectedItem === item && styles.filterButtonTextActive,
+              { flex: 1 },
+              title === 'Cement Type' && styles.cementTypeButton,
+              title === 'Grade' && styles.gradeButton,
             ]}
             onPress={() => onSelect(item)}
           >
@@ -113,7 +190,11 @@ const ProductListing = ({ navigation, route }) => {
                 colors={['#723FED', '#3B58EB']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
-                style={styles.filterButtonGradient}
+                style={[
+                  styles.filterButtonGradient,
+                  title === 'Cement Type' && styles.cementTypeGradient,
+                  title === 'Grade' && styles.gradeGradient,
+                ]}
               >
                 <Text style={styles.filterButtonTextActive}>{item}</Text>
               </LinearGradient>
@@ -127,24 +208,39 @@ const ProductListing = ({ navigation, route }) => {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Filters */}
-      <ScrollView 
-        style={styles.content} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        {renderFilterButton(cementTypes, selectedCementType, setSelectedCementType, 'Cement Type')}
-        {renderFilterButton(grades, selectedGrade, setSelectedGrade, 'Grade')}
+    <>
+      <View style={styles.container}>
+        {/* Filters */}
+        <ScrollView 
+          style={styles.content} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+        {/* Delivery Location Section */}
+        {renderDeliveryLocation()}
+          
+          {renderFilterButton(cementTypes, selectedCementType, setSelectedCementType, 'Cement Type')}
+          {renderFilterButton(grades, selectedGrade, setSelectedGrade, 'Grade')}
 
-        {/* Products */}
-        <View style={styles.productsContainer}>
-          <View style={styles.productsGrid}>
-            {filteredProducts.map(renderProductCard)}
+          {/* Products */}
+          <View style={styles.productsContainer}>
+            <View style={styles.productsGrid}>
+              {filteredProducts.map(renderProductCard)}
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+
+      {/* Pincode Modal - Rendered outside the main container */}
+      <PincodeModal
+        visible={showPincodeModal}
+        onClose={() => setShowPincodeModal(false)}
+        onPincodeSet={(pincodeData) => {
+          handlePincodeSet(pincodeData);
+          setShowPincodeModal(false);
+        }}
+      />
+    </>
   );
 };
 
@@ -161,8 +257,72 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing.lg, // Add padding to the bottom of the ScrollView content
   },
+  deliveryLocationSection: {
+    backgroundColor: 'white',
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    marginVertical: spacing.md,
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deliveryLocationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deliveryLocationIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E8E5FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  deliveryLocationInfo: {
+    flex: 1,
+  },
+  deliveryLocationTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  deliveryLocationPincode: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textPrimary,
+    marginBottom: 2,
+  },
+  deliveryTimeText: {
+    fontSize: 14,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  changeButton: {
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  changeButtonGradient: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  changeButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   filterSection: {
     marginVertical: spacing.md,
+  },
+  filterSectionNoPadding: {
+    marginVertical: 0, // No padding for grade section
   },
   filterTitle: {
     fontSize: 16,
@@ -176,38 +336,52 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: 22,
+    borderRadius: 12, // Semi-rounded design
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
+    borderColor: '#723FED', // Purple border for inactive state
+    backgroundColor: '#E8E5FF', // Light purple filled background for inactive
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+    marginHorizontal: 2, // Small gap between buttons
+  },
+  cementTypeButton: {
+    paddingVertical: 12, // More padding for cement type buttons
+  },
+  gradeButton: {
+    paddingVertical: 10, // Less padding for grade buttons
   },
   filterButtonGradient: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 25,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 12, // Semi-rounded design
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.primary,
+    borderWidth: 0, // No border for gradient
+  },
+  cementTypeGradient: {
+    paddingVertical: 12, // More padding for cement type gradient
+  },
+  gradeGradient: {
+    paddingVertical: 10, // Less padding for grade gradient
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: '#723FED', // Purple text for inactive state (matches border)
     textAlign: 'center',
   },
   filterButtonTextActive: {
     color: colors.textWhite,
     textAlign: 'center',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    borderWidth: 0,
   },
   productsContainer: {
+    marginTop: spacing.lg, // Add gap between filter buttons and product cards
     // paddingBottom: 80, // Extra padding for bottom navigation bar
   },
   productsGrid: {
@@ -217,7 +391,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   productCard: {
-    backgroundColor: colors.card,
+    backgroundColor: '#E0E0E0', // Darker gray background for cards
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     shadowColor: colors.black,
@@ -254,6 +428,31 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: colors.textWhite,
+  },
+  favoriteButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10, 
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.black,
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  favoriteIcon: {
+    fontSize: 16,
+  },
+  favoriteIconActive: {
+    fontSize: 18,
   },
   productInfo: {
     alignItems: 'center',
