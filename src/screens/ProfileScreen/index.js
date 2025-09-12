@@ -12,8 +12,15 @@ const ProfileScreen = ({ navigation }) => {
   const userData = user || {
     name: 'John Doe',
     email: 'john.doe@example.com',
-    phone: '+91 98765 43210',
-    address: '123 Construction Street, Mumbai, Maharashtra'
+    phone: '1234567890',
+    address: '123 Construction Street, Mumbai, Maharashtra',
+    pincode: '400001',
+    role: 'customer',
+    accessLevel: 'app_web',
+    permissions: ['app_access', 'web_access'],
+    isPhoneVerified: false,
+    isEmailVerified: false,
+    isActive: true
   };
 
   const menuItems = [
@@ -101,6 +108,32 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.userName}>{userData.name}</Text>
           <Text style={styles.userEmail}>{userData.email}</Text>
           <Text style={styles.userPhone}>{userData.phone}</Text>
+          <Text style={styles.userAddress}>{userData.address}</Text>
+          <Text style={styles.userPincode}>Pincode: {userData.pincode}</Text>
+          
+          {/* Verification Status */}
+          <View style={styles.verificationStatus}>
+            <View style={styles.verificationItem}>
+              <Icon 
+                name={userData.isEmailVerified ? "check-circle" : "x-circle"} 
+                size={16} 
+                color={userData.isEmailVerified ? "#10B981" : "#EF4444"} 
+              />
+              <Text style={[styles.verificationText, { color: userData.isEmailVerified ? "#10B981" : "#EF4444" }]}>
+                Email {userData.isEmailVerified ? 'Verified' : 'Not Verified'}
+              </Text>
+            </View>
+            <View style={styles.verificationItem}>
+              <Icon 
+                name={userData.isPhoneVerified ? "check-circle" : "x-circle"} 
+                size={16} 
+                color={userData.isPhoneVerified ? "#10B981" : "#EF4444"} 
+              />
+              <Text style={[styles.verificationText, { color: userData.isPhoneVerified ? "#10B981" : "#EF4444" }]}>
+                Phone {userData.isPhoneVerified ? 'Verified' : 'Not Verified'}
+              </Text>
+            </View>
+          </View>
         </View>
 
         {/* Menu Items */}

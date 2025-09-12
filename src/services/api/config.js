@@ -4,7 +4,7 @@ import { refreshToken } from './loginService';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://10.0.2.2:5000',
+  BASE_URL: 'http://15.206.171.191:5000',
   TIMEOUT: 30000,
 };
 
@@ -18,26 +18,56 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and logging
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await getAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log request details
+    console.log('🌐 NETWORK REQUEST:', {
+      method: config.method?.toUpperCase(),
+      url: `${config.baseURL}${config.url}`,
+      headers: config.headers,
+      data: config.data,
+      timestamp: new Date().toISOString()
+    });
+    
     return config;
   },
   (error) => {
+    console.log('❌ REQUEST ERROR:', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle token refresh and logging
 apiClient.interceptors.response.use(
   (response) => {
+    // Log successful response
+    console.log('✅ NETWORK RESPONSE:', {
+      status: response.status,
+      statusText: response.statusText,
+      url: response.config.url,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
+    
     return response;
   },
   async (error) => {
+    // Log error response
+    console.log('❌ NETWORK ERROR:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      message: error.message,
+      data: error.response?.data,
+      timestamp: new Date().toISOString()
+    });
+
     const originalRequest = error.config;
 
     // If error is 401 and we haven't tried to refresh token yet

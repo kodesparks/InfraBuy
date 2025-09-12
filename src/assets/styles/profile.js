@@ -53,6 +53,34 @@ export default StyleSheet.create({
   userPhone: {
     fontSize: 16,
     color: colors.textSecondary,
+    marginBottom: spacing.xs,
+  },
+  userAddress: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  userPincode: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  verificationStatus: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing.lg,
+  },
+  verificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  verificationText: {
+    fontSize: 12,
+    fontWeight: '500',
   },
   menuSection: {
     backgroundColor: colors.white,

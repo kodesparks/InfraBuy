@@ -20,29 +20,18 @@ import { useAuth } from '../../context/AuthContext';
 const LoginScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
     email: '',
-    phone: '',
     password: ''
   });
-  
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'phone'
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
 
   // Basic validation
   const validateForm = () => {
-    if (loginMethod === 'email' && !formData.email.trim()) {
+    if (!formData.email.trim()) {
       Toast.show({
         type: 'error',
         text1: 'Validation Error',
         text2: 'Please enter your email address'
-      });
-      return false;
-    }
-    if (loginMethod === 'phone' && !formData.phone.trim()) {
-      Toast.show({
-        type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your phone number'
       });
       return false;
     }
@@ -64,15 +53,9 @@ const LoginScreen = ({ navigation }) => {
     setIsLoading(true);
     try {
       const credentials = {
+        email: formData.email.trim().toLowerCase(),
         password: formData.password
       };
-
-      // Add email or phone based on login method
-      if (loginMethod === 'email') {
-        credentials.email = formData.email.trim().toLowerCase();
-      } else {
-        credentials.phone = `+91${formData.phone.trim()}`;
-      }
 
       const result = await loginUser(credentials);
       
@@ -148,43 +131,16 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.formContainer}>
             <Text style={styles.title}>Welcome Back</Text>
             
-            {/* Login Method Toggle */}
-            <View style={styles.toggleContainer}>
-              <TouchableOpacity 
-                style={[styles.toggleButton, loginMethod === 'email' && styles.toggleButtonActive]}
-                onPress={() => setLoginMethod('email')}
-              >
-                <Text style={[styles.toggleText, loginMethod === 'email' && styles.toggleTextActive]}>
-                  Email
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.toggleButton, loginMethod === 'phone' && styles.toggleButtonActive]}
-                onPress={() => setLoginMethod('phone')}
-              >
-                <Text style={[styles.toggleText, loginMethod === 'phone' && styles.toggleTextActive]}>
-                  Phone
-                </Text>
-              </TouchableOpacity>
-            </View>
-            
-            {/* Email/Phone Input */}
+            {/* Email Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder={loginMethod === 'email' ? 'Email address' : 'Phone number (10 digits)'}
+                placeholder="Email address"
                 placeholderTextColor="#9CA3AF"
-                value={loginMethod === 'email' ? formData.email : formData.phone}
-                onChangeText={(value) => {
-                  if (loginMethod === 'email') {
-                    setFormData(prev => ({ ...prev, email: value }));
-                  } else {
-                    setFormData(prev => ({ ...prev, phone: value }));
-                  }
-                }}
-                keyboardType={loginMethod === 'email' ? 'email-address' : 'phone-pad'}
-                autoCapitalize={loginMethod === 'email' ? 'none' : 'none'}
-                maxLength={loginMethod === 'phone' ? 10 : undefined}
+                value={formData.email}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, email: value }))}
+                keyboardType="email-address"
+                autoCapitalize="none"
                 editable={!isLoading}
               />
             </View>
@@ -278,30 +234,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     textAlign: 'center',
     marginBottom: 30,
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
-  },
-  toggleButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  toggleButtonActive: {
-    backgroundColor: colors.white,
-  },
-  toggleText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  toggleTextActive: {
-    color: '#3B58EB',
   },
   inputContainer: {
     marginBottom: 15,

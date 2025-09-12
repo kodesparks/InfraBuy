@@ -5,7 +5,22 @@ import { apiClient } from './config';
  */
 export const createResource = async (endpoint, data) => {
   try {
+    // Log the request
+    console.log('🚀 API REQUEST:', {
+      method: 'POST',
+      url: `${apiClient.defaults.baseURL}${endpoint}`,
+      data: data,
+      timestamp: new Date().toISOString()
+    });
+
     const response = await apiClient.post(endpoint, data);
+    
+    // Log the response
+    console.log('✅ API RESPONSE:', {
+      status: response.status,
+      data: response.data,
+      timestamp: new Date().toISOString()
+    });
     
     return {
       success: true,
@@ -13,6 +28,14 @@ export const createResource = async (endpoint, data) => {
       message: 'Operation completed successfully'
     };
   } catch (error) {
+    // Log the error
+    console.log('❌ API ERROR:', {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message,
+      data: error.response?.data,
+      timestamp: new Date().toISOString()
+    });
+
     return {
       success: false,
       error: {

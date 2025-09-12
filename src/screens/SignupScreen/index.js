@@ -14,6 +14,8 @@ import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { registerUser } from '../../services/api';
+import { storeTokens } from '../../services/auth/tokenManager';
+import { useAuth } from '../../context/AuthContext';
 
 const SignupScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -21,10 +23,12 @@ const SignupScreen = ({ navigation }) => {
     email: '',
     phone: '',
     password: '',
-    address: ''
+    address: '',
+    pincode: ''
   });
   
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   // Basic validation
   const validateForm = () => {
@@ -68,6 +72,14 @@ const SignupScreen = ({ navigation }) => {
       });
       return false;
     }
+    if (!formData.pincode.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please enter your pincode'
+      });
+      return false;
+    }
     return true;
   };
 
@@ -80,24 +92,43 @@ const SignupScreen = ({ navigation }) => {
       const userData = {
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
-        phone: `+91${formData.phone.trim()}`, // Add +91 prefix for India
+        phone: formData.phone.trim(),
         password: formData.password,
-        address: formData.address.trim()
+        address: formData.address.trim(),
+        pincode: formData.pincode.trim()
       };
 
       const result = await registerUser(userData);
       
       if (result.success) {
-        Toast.show({
-          type: 'success',
-          text1: 'Success!',
-          text2: 'Account created successfully!'
-        });
-        
-        // Navigate to login after a short delay
-        setTimeout(() => {
-          navigation.navigate('Login');
-        }, 1500);
+        // Store tokens and user data
+        const stored = await storeTokens(
+          result.data.accessToken,
+          result.data.refreshToken,
+          result.data.user
+        );
+
+        if (stored) {
+          // Update auth context
+          login(result.data.user);
+          
+          Toast.show({
+            type: 'success',
+            text1: 'Success!',
+            text2: 'Account created successfully!'
+          });
+          
+          // Navigate to main app after storing tokens
+          setTimeout(() => {
+            navigation.navigate('MainApp');
+          }, 1500);
+        } else {
+          Toast.show({
+            type: 'error',
+            text1: 'Signup Failed',
+            text2: 'Failed to store authentication data'
+          });
+        }
       } else {
         Toast.show({
           type: 'error',
@@ -192,6 +223,20 @@ const SignupScreen = ({ navigation }) => {
                 onChangeText={(value) => setFormData(prev => ({ ...prev, address: value }))}
                 multiline
                 numberOfLines={2}
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Pincode Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Pincode"
+                placeholderTextColor="#9CA3AF"
+                value={formData.pincode}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
+                keyboardType="numeric"
+                maxLength={6}
                 editable={!isLoading}
               />
             </View>

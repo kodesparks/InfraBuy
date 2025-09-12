@@ -2,10 +2,34 @@ import { createResource } from './baseService';
 import { clearTokens } from '../auth/tokenManager';
 
 /**
- * Login user with email/phone and password
+ * Login user with email and password
  */
 export const loginUser = async (credentials) => {
-  return createResource('/api/auth/login', credentials);
+  try {
+    const response = await createResource('/api/auth/login', credentials);
+    
+    // Handle the new API response structure
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: {
+          user: response.data.user,
+          accessToken: response.data.accessToken,
+          refreshToken: response.data.refreshToken,
+          message: response.data.message
+        }
+      };
+    }
+    
+    return response;
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.message || 'Login failed'
+      }
+    };
+  }
 };
 
 /**
