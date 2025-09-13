@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
-import MessageBox from './MessageBox';
 import { useAppContext } from '../../context/AppContext';
 
 const AppHeader = ({ 
@@ -18,15 +17,7 @@ const AppHeader = ({
   cartCount = 0,
   notificationCount = 0
 }) => {
-  const { markNotificationAsRead, addNotification } = useAppContext();
-  const [showMessageBox, setShowMessageBox] = useState(false);
-  const [messages, setMessages] = useState([
-    {
-      text: 'Hello! How can I help you today?',
-      isUser: false,
-      time: 'Just now'
-    }
-  ]);
+  const { markNotificationAsRead } = useAppContext();
   
   const handleMenuPress = () => {
     if (onMenuPress) {
@@ -56,31 +47,11 @@ const AppHeader = ({
     if (onHelpPress) {
       onHelpPress();
     } else {
-      // Show message box for help/chat and add notification
-      setShowMessageBox(true);
-      addNotification();
+      // Navigate to Support screen
+      navigation.navigate('Support');
     }
   };
 
-  const handleSendMessage = (messageText) => {
-    const newMessage = {
-      text: messageText,
-      isUser: true,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-    
-    setMessages(prev => [...prev, newMessage]);
-    
-    // Simulate support response
-    setTimeout(() => {
-      const supportResponse = {
-        text: 'Thank you for your message. Our support team will get back to you soon.',
-        isUser: false,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      setMessages(prev => [...prev, supportResponse]);
-    }, 1000);
-  };
 
   const handleCartPress = () => {
     if (onCartPress) {
@@ -141,15 +112,6 @@ const AppHeader = ({
           </TouchableOpacity>
         </View>
       </LinearGradient>
-      
-      <MessageBox
-        isVisible={showMessageBox}
-        onClose={() => setShowMessageBox(false)}
-        onSend={handleSendMessage}
-        messages={messages}
-        title="Support Chat"
-        placeholder="Type your question..."
-      />
     </SafeAreaView>
   );
 };
