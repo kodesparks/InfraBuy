@@ -5,11 +5,15 @@ import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
+import { getAllProducts, getFilterOptionsByCategory } from '../../data/productsData';
 
 const ProductListing = ({ navigation, route }) => {
   const { category } = route.params || { name: 'Products' };
-  const [selectedCementType, setSelectedCementType] = useState('OPC');
-  const [selectedGrade, setSelectedGrade] = useState('53G');
+  
+  // Get filter options and set default selections
+  const filterOptions = getFilterOptionsByCategory(category.name);
+  const [selectedCementType, setSelectedCementType] = useState(filterOptions.types[0] || 'All');
+  const [selectedGrade, setSelectedGrade] = useState(filterOptions.grades[0] || 'All');
   const [favorites, setFavorites] = useState(new Set());
   const [showPincodeModal, setShowPincodeModal] = useState(false);
   
@@ -25,56 +29,18 @@ const ProductListing = ({ navigation, route }) => {
     setShowPincodeModal(true);
   };
 
-  const cementTypes = ['OPC', 'PPC'];
-  const grades = ['43G', '53G', '53GS'];
-
-  const products = [
-    {
-      id: 1,
-      name: 'UltraTech Cement',
-      type: 'OPC',
-      grade: '53G',
-      price: 420,
-      unit: 'per 50kg bag',
-      image: require('../../assets/images/cement.png'),
-      inStock: true,
-    },
-    {
-      id: 2,
-      name: 'ACC Cement',
-      type: 'PPC',
-      grade: '53G',
-      price: 395,
-      unit: 'per 50kg bag',
-      image: require('../../assets/images/cement.png'),
-      inStock: true,
-    },
-    {
-      id: 3,
-      name: 'Ambuja Cement',
-      type: 'OPC',
-      grade: '43G',
-      price: 380,
-      unit: 'per 50kg bag',
-      image: require('../../assets/images/cement.png'),
-      inStock: true,
-    },
-    {
-      id: 4,
-      name: 'JSW Cement',
-      type: 'PPC',
-      grade: '53GS',
-      price: 410,
-      unit: 'per 50kg bag',
-      image: require('../../assets/images/cement.png'),
-      inStock: false,
-    },
-  ];
+  // Get products from data file
+  const products = getAllProducts();
 
   const filteredProducts = products.filter(product => {
+    // Filter by category first
+    const matchesCategory = product.category === category.name;
+    
+    // Then filter by type and grade
     const matchesType = selectedCementType === 'All' || product.type === selectedCementType;
     const matchesGrade = selectedGrade === 'All' || product.grade === selectedGrade;
-    return matchesType && matchesGrade;
+    
+    return matchesCategory && matchesType && matchesGrade;
   });
 
   const handleProductPress = (product) => {
@@ -180,7 +146,7 @@ const ProductListing = ({ navigation, route }) => {
             style={[
               styles.filterButton,
               { flex: 1 },
-              title === 'Cement Type' && styles.cementTypeButton,
+              title === 'Type' && styles.cementTypeButton,
               title === 'Grade' && styles.gradeButton,
             ]}
             onPress={() => onSelect(item)}
@@ -192,7 +158,7 @@ const ProductListing = ({ navigation, route }) => {
                 end={{ x: 1, y: 0 }}
                 style={[
                   styles.filterButtonGradient,
-                  title === 'Cement Type' && styles.cementTypeGradient,
+                  title === 'Type' && styles.cementTypeGradient,
                   title === 'Grade' && styles.gradeGradient,
                 ]}
               >
@@ -219,8 +185,8 @@ const ProductListing = ({ navigation, route }) => {
         {/* Delivery Location Section */}
         {renderDeliveryLocation()}
           
-          {renderFilterButton(cementTypes, selectedCementType, setSelectedCementType, 'Cement Type')}
-          {renderFilterButton(grades, selectedGrade, setSelectedGrade, 'Grade')}
+          {renderFilterButton(filterOptions.types, selectedCementType, setSelectedCementType, 'Type')}
+          {renderFilterButton(filterOptions.grades, selectedGrade, setSelectedGrade, 'Grade')}
 
           {/* Products */}
           <View style={styles.productsContainer}>
@@ -382,13 +348,13 @@ const styles = StyleSheet.create({
   },
   productsContainer: {
     marginTop: spacing.lg, // Add gap between filter buttons and product cards
-    // paddingBottom: 80, // Extra padding for bottom navigation bar
+    paddingBottom: 100, // Extra padding for bottom navigation bar
   },
   productsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: spacing.md,
+    paddingHorizontal: 0,
   },
   productCard: {
     backgroundColor: '#E0E0E0', // Darker gray background for cards
@@ -404,6 +370,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     width: '48%',
     marginBottom: spacing.md,
+    marginHorizontal: '1%',
   },
   productImageContainer: {
     position: 'relative',

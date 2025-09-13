@@ -90,16 +90,19 @@ export default StyleSheet.create({
     borderBottomColor: colors.lightGray,
   },
   itemImageContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
+    borderRadius: 8,
     backgroundColor: colors.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 15,
+    overflow: 'hidden',
   },
   itemImage: {
-    fontSize: 24,
+    width: 60,
+    height: 60,
+    resizeMode: 'contain',
   },
   itemInfo: {
     flex: 1,
@@ -113,6 +116,12 @@ export default StyleSheet.create({
   itemPrice: {
     fontSize: 14,
     color: colors.darkGray,
+    marginBottom: 2,
+  },
+  itemDetails: {
+    fontSize: 12,
+    color: colors.darkGray,
+    fontStyle: 'italic',
   },
   itemActions: {
     flexDirection: 'row',
@@ -181,13 +190,13 @@ export default StyleSheet.create({
     marginBottom: 10,
   },
   addressInput: {
-    borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderWidth: 2,
+    borderColor: colors.primary,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: colors.text,
     minHeight: 80,
+    color: colors.text,
     textAlignVertical: 'top',
   },
   placeOrderButton: {

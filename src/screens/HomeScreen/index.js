@@ -37,8 +37,7 @@ const HomeScreen = ({ navigation }) => {
   ];
 
   const handleCategoryPress = (category) => {
-    // Add a sample item to cart when category is pressed
-    addToCart();
+    // Navigate to ProductListing without adding to cart
     navigation.navigate('ProductListing', { category });
   };
 

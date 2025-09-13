@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, FlatList, Alert } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import { useAppContext } from '../../context/AppContext';
 
 const ProductDetail = ({ navigation, route }) => {
   const { product } = route.params || {};
   const [quantity, setQuantity] = useState(1);
-  const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [detailsExpanded, setDetailsExpanded] = useState(false);
   const [specificationsExpanded, setSpecificationsExpanded] = useState(false);
-  const [deliveryExpanded, setDeliveryExpanded] = useState(true);
+  const [deliveryExpanded, setDeliveryExpanded] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const flatListRef = useRef(null);
+  
+  // Get cart functions from AppContext
+  const { addToCart } = useAppContext();
 
   const productData = product || {
     name: 'ACC Cement',
@@ -43,7 +47,19 @@ const ProductDetail = ({ navigation, route }) => {
   };
 
   const handleAddToCart = () => {
-    navigation.navigate('Cart');
+    if (productData && productData.id) {
+      addToCart(productData, quantity);
+      Alert.alert(
+        'Added to Cart',
+        `${productData.name} (${quantity} ${productData.unit}) has been added to your cart.`,
+        [
+          { text: 'Continue Shopping', style: 'cancel' },
+          { text: 'View Cart', onPress: () => navigation.navigate('Cart') }
+        ]
+      );
+    } else {
+      Alert.alert('Error', 'Product information is not available. Please try again.');
+    }
   };
 
   const handleImageScroll = (event) => {

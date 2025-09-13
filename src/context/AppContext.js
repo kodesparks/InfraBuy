@@ -14,7 +14,8 @@ export const useAppContext = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  const [cartCount, setCartCount] = useState(2);
+  const [cartItems, setCartItems] = useState([]);
+  const [cartCount, setCartCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
   
   // Delivery and location state
@@ -125,15 +126,73 @@ export const AppProvider = ({ children }) => {
   };
 
   // Cart functions
-  const addToCart = () => {
-    setCartCount(prev => prev + 1);
+  const addToCart = (product, quantity = 1) => {
+    // Validate product object
+    if (!product || !product.id) {
+      console.error('Invalid product object provided to addToCart:', product);
+      return;
+    }
+
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        // Update quantity if item already exists
+        const updatedItems = prevItems.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+        setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
+        return updatedItems;
+      } else {
+        // Add new item to cart
+        const newItem = {
+          id: product.id,
+          name: product.name || 'Unknown Product',
+          price: product.price || 0,
+          unit: product.unit || 'per unit',
+          quantity: quantity,
+          image: product.image || require('../assets/images/cement.png'),
+          type: product.type || 'Unknown',
+          grade: product.grade || 'Unknown',
+          brand: product.brand || 'Unknown',
+          category: product.category || 'Unknown'
+        };
+        const updatedItems = [...prevItems, newItem];
+        setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
+        return updatedItems;
+      }
+    });
   };
 
-  const removeFromCart = () => {
-    setCartCount(prev => Math.max(0, prev - 1));
+  const updateCartItemQuantity = (itemId, newQuantity) => {
+    if (newQuantity <= 0) {
+      removeFromCart(itemId);
+      return;
+    }
+    
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.map(item =>
+        item.id === itemId
+          ? { ...item, quantity: newQuantity }
+          : item
+      );
+      setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
+      return updatedItems;
+    });
+  };
+
+  const removeFromCart = (itemId) => {
+    setCartItems(prevItems => {
+      const updatedItems = prevItems.filter(item => item.id !== itemId);
+      setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
+      return updatedItems;
+    });
   };
 
   const clearCart = () => {
+    setCartItems([]);
     setCartCount(0);
   };
 
@@ -152,9 +211,11 @@ export const AppProvider = ({ children }) => {
 
   const value = {
     // Cart state
+    cartItems,
     cartCount,
     notificationCount,
     addToCart,
+    updateCartItemQuantity,
     removeFromCart,
     clearCart,
     addNotification,

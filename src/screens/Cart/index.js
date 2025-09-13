@@ -1,46 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../assets/styles/cart';
 import OrderConfirmation from '../../components/OrderConfirmation';
 import { colors } from '../../assets/styles/global';
+import { useAppContext } from '../../context/AppContext';
 
 const Cart = ({ navigation }) => {
   const [shippingAddress, setShippingAddress] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Maha HD+ Cement (Bags)',
-      price: '₹ 340/bag',
-      quantity: 5,
-      image: '🏗️'
-    },
-    {
-      id: 2,
-      name: 'TATA TISCON 550SD (Tons)',
-      price: '₹ 8.500/ton',
-      quantity: 1,
-      image: '🏗️'
-    }
-  ]);
+  
+  // Get cart data from AppContext
+  const { 
+    cartItems, 
+    cartCount, 
+    updateCartItemQuantity, 
+    removeFromCart, 
+    clearCart: clearCartContext 
+  } = useAppContext();
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = parseFloat(item.price.replace(/[^\d.]/g, ''));
+      const price = typeof item.price === 'number' ? item.price : parseFloat(item.price.toString().replace(/[^\d.]/g, ''));
       return total + (price * item.quantity);
     }, 0);
   };
 
   const updateQuantity = (itemId, change) => {
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: Math.max(1, item.quantity + change) }
-          : item
-      )
-    );
+    const item = cartItems.find(item => item.id === itemId);
+    if (item) {
+      const newQuantity = Math.max(1, item.quantity + change);
+      updateCartItemQuantity(itemId, newQuantity);
+    }
   };
 
   const deleteItem = (itemId) => {
@@ -53,14 +45,14 @@ const Cart = ({ navigation }) => {
           text: 'Remove', 
           style: 'destructive',
           onPress: () => {
-            setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+            removeFromCart(itemId);
           }
         }
       ]
     );
   };
 
-  const clearCart = () => {
+  const handleClearCart = () => {
     if (cartItems.length === 0) {
       Alert.alert('Cart Empty', 'Your cart is already empty.');
       return;
@@ -75,7 +67,7 @@ const Cart = ({ navigation }) => {
           text: 'Clear All', 
           style: 'destructive',
           onPress: () => {
-            setCartItems([]);
+            clearCartContext();
             Alert.alert('Cart Cleared', 'All items have been removed from your cart.');
           }
         }
@@ -99,7 +91,7 @@ const Cart = ({ navigation }) => {
 
   const handleContinueShopping = () => {
     setShowConfirmation(false);
-    setCartItems([]); // Clear cart after successful order
+    clearCartContext(); // Clear cart after successful order
     setShippingAddress(''); // Clear address
     navigation.navigate('MainApp');
   };
@@ -118,7 +110,7 @@ const Cart = ({ navigation }) => {
           <View style={styles.cartHeader}>
             <Text style={styles.cartTitle}>Cart Items ({cartItems.length})</Text>
             {cartItems.length > 0 && (
-              <TouchableOpacity style={styles.clearCartButton} onPress={clearCart}>
+              <TouchableOpacity style={styles.clearCartButton} onPress={handleClearCart}>
                 <Icon name="trash-2" size={16} color="white" />
                 <Text style={styles.clearCartText}>Clear All</Text>
               </TouchableOpacity>
@@ -146,11 +138,12 @@ const Cart = ({ navigation }) => {
             cartItems.map((item) => (
               <View key={item.id} style={styles.cartItem}>
                 <View style={styles.itemImageContainer}>
-                  <Text style={styles.itemImage}>{item.image}</Text>
+                  <Image source={item.image} style={styles.itemImage} />
                 </View>
                 <View style={styles.itemInfo}>
                   <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>{item.price}</Text>
+                  <Text style={styles.itemPrice}>₹{item.price} {item.unit}</Text>
+                  <Text style={styles.itemDetails}>{item.type} {item.grade}</Text>
                 </View>
                 <View style={styles.itemActions}>
                   <View style={styles.quantityContainer}>
