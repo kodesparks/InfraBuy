@@ -4,7 +4,7 @@ import { refreshToken } from './loginService';
 
 // API Configuration
 export const API_CONFIG = {
-  BASE_URL: 'http://15.206.171.191:5000',
+  BASE_URL: 'https://api.infraxpert.in',
   TIMEOUT: 30000,
 };
 
