@@ -6,6 +6,7 @@ import styles from '../../assets/styles/cart';
 import OrderConfirmation from '../../components/OrderConfirmation';
 import { colors } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
+import { useOrderContext } from '../../context/OrderContext';
 
 const Cart = ({ navigation }) => {
   const [shippingAddress, setShippingAddress] = useState('');
@@ -19,6 +20,9 @@ const Cart = ({ navigation }) => {
     removeFromCart, 
     clearCart: clearCartContext 
   } = useAppContext();
+
+  // Get order management from OrderContext
+  const { createOrder } = useOrderContext();
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
@@ -86,7 +90,30 @@ const Cart = ({ navigation }) => {
       return;
     }
     
-    setShowConfirmation(true);
+    // Create order from cart items
+    const totalAmount = calculateTotal();
+    console.log('Creating order with cart items:', cartItems);
+    console.log('Total amount:', totalAmount);
+    console.log('Shipping address:', shippingAddress);
+    
+    const newOrder = createOrder(cartItems, shippingAddress, totalAmount);
+    console.log('Created order:', newOrder);
+    
+    Alert.alert(
+      'Order Created Successfully!',
+      `Order ID: ${newOrder.id}\nTotal Amount: ₹${totalAmount.toFixed(2)}\n\nPlease complete payment to proceed.`,
+      [
+        { 
+          text: 'Complete Payment', 
+          onPress: () => {
+            clearCartContext();
+            setShippingAddress('');
+            navigation.navigate('Orders');
+          }
+        },
+        { text: 'Continue Shopping', style: 'cancel' }
+      ]
+    );
   };
 
   const handleContinueShopping = () => {

@@ -24,7 +24,8 @@ const SignupScreen = ({ navigation }) => {
     phone: '',
     password: '',
     address: '',
-    pincode: ''
+    pincode: '',
+    companyName: ''
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -95,7 +96,8 @@ const SignupScreen = ({ navigation }) => {
         phone: formData.phone.trim(),
         password: formData.password,
         address: formData.address.trim(),
-        pincode: formData.pincode.trim()
+        pincode: formData.pincode.trim(),
+        companyName: formData.companyName.trim()
       };
 
       const result = await registerUser(userData);
@@ -180,6 +182,19 @@ const SignupScreen = ({ navigation }) => {
                 placeholderTextColor="#9CA3AF"
                 value={formData.name}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, name: value }))}
+                autoCapitalize="words"
+                editable={!isLoading}
+              />
+            </View>
+            
+            {/* Company Name Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Company Name (Optional)"
+                placeholderTextColor="#9CA3AF"
+                value={formData.companyName}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, companyName: value }))}
                 autoCapitalize="words"
                 editable={!isLoading}
               />
