@@ -15,48 +15,62 @@ import { useAppContext } from '../context/AppContext';
 const Tab = createBottomTabNavigator();
 
 // Wrapper components to include AppHeader on each screen
-const HomeScreenWrapper = ({ navigation }) => (
-  <View style={{ flex: 1 }}>
-    <AppHeader 
-      navigation={navigation}
-      title="infraXpert"
-    />
-    <HomeScreen navigation={navigation} />
-  </View>
-);
+const HomeScreenWrapper = ({ navigation }) => {
+  const { cartCount } = useAppContext();
+  return (
+    <View style={{ flex: 1 }}>
+      <AppHeader 
+        navigation={navigation}
+        title="infraXpert"
+        cartCount={cartCount}
+      />
+      <HomeScreen navigation={navigation} />
+    </View>
+  );
+};
 
-const OrdersScreenWrapper = ({ navigation }) => (
-  <View style={{ flex: 1 }}>
-    <AppHeader 
-      navigation={navigation}
-      title="Orders"
-    />
-    <OrdersScreen navigation={navigation} />
-  </View>
-);
+const OrdersScreenWrapper = ({ navigation }) => {
+  const { cartCount } = useAppContext();
+  return (
+    <View style={{ flex: 1 }}>
+      <AppHeader 
+        navigation={navigation}
+        title="Orders"
+        cartCount={cartCount}
+      />
+      <OrdersScreen navigation={navigation} />
+    </View>
+  );
+};
 
-const UpdatesScreenWrapper = ({ navigation }) => (
-  <View style={{ flex: 1 }}>
-    <AppHeader 
-      navigation={navigation}
-      title="Updates"
-    />
-    <UpdatesScreen navigation={navigation} />
-  </View>
-);
+const UpdatesScreenWrapper = ({ navigation }) => {
+  const { cartCount } = useAppContext();
+  return (
+    <View style={{ flex: 1 }}>
+      <AppHeader 
+        navigation={navigation}
+        title="Updates"
+        cartCount={cartCount}
+      />
+      <UpdatesScreen navigation={navigation} />
+    </View>
+  );
+};
 
-
-
-const ProfileScreenWrapper = ({ navigation }) => (
-  <View style={{ flex: 1 }}>
-    <AppHeader 
-      navigation={navigation}
-      title="Profile"
-      showBack={true}
-    />
-    <ProfileScreen navigation={navigation} />
-  </View>
-);
+const ProfileScreenWrapper = ({ navigation }) => {
+  const { cartCount } = useAppContext();
+  return (
+    <View style={{ flex: 1 }}>
+      <AppHeader 
+        navigation={navigation}
+        title="Profile"
+        showBack={true}
+        cartCount={cartCount}
+      />
+      <ProfileScreen navigation={navigation} />
+    </View>
+  );
+};
 
 const MainNavigator = () => {
   return (

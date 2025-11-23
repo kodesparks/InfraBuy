@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WAREHOUSE_LOCATIONS, PRODUCT_CATEGORY_MAPPING } from '../services/config/warehouseConfig';
 import { distanceService } from '../services/location/distanceService';
+import { cartService } from '../services/api/cartService';
 
 const AppContext = createContext();
 
@@ -87,17 +88,35 @@ export const AppProvider = ({ children }) => {
     try {
       const { pincode, location } = pincodeData;
       
+      // Validate location data before saving
+      if (!location || !location.latitude || !location.longitude) {
+        console.error('Invalid location data:', location);
+        throw new Error('Invalid location data received. Please try again.');
+      }
+      
+      // Prepare location object with required fields
+      const locationToSave = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        address: location.address || `${pincode}, India`,
+        city: location.city,
+        state: location.state,
+        district: location.district,
+        region: location.region,
+      };
+      
       // Save to AsyncStorage
       await AsyncStorage.setItem('userPincode', pincode);
-      await AsyncStorage.setItem('userLocation', JSON.stringify(location));
+      await AsyncStorage.setItem('userLocation', JSON.stringify(locationToSave));
       
       // Update state
       setUserPincode(pincode);
-      setUserLocation(location);
-      calculateDeliveryInfo(location);
+      setUserLocation(locationToSave);
+      calculateDeliveryInfo(locationToSave);
       setShowPincodeModal(false);
     } catch (error) {
       console.error('Error saving pincode:', error);
+      // You might want to show an alert to the user here
     }
   };
 
@@ -125,75 +144,133 @@ export const AppProvider = ({ children }) => {
     );
   };
 
-  // Cart functions
-  const addToCart = (product, quantity = 1) => {
+  // Cart functions - using API
+  const addToCart = async (product, quantity = 1) => {
     // Validate product object
-    if (!product || !product.id) {
+    if (!product || (!product.id && !product._id)) {
       console.error('Invalid product object provided to addToCart:', product);
-      return;
+      return { success: false, error: 'Invalid product information' };
     }
 
-    setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
-      
-      if (existingItem) {
-        // Update quantity if item already exists
-        const updatedItems = prevItems.map(item =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-        setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
-        return updatedItems;
-      } else {
-        // Add new item to cart
-        const newItem = {
-          id: product.id,
-          name: product.name || 'Unknown Product',
-          price: product.price || 0,
-          unit: product.unit || 'per unit',
-          quantity: quantity,
-          image: product.image || require('../assets/images/cement.png'),
-          type: product.type || 'Unknown',
-          grade: product.grade || 'Unknown',
-          brand: product.brand || 'Unknown',
-          category: product.category || 'Unknown'
-        };
-        const updatedItems = [...prevItems, newItem];
-        setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
-        return updatedItems;
+    if (!userPincode) {
+      return { success: false, error: 'Pincode is required to add items to cart' };
+    }
+
+    try {
+      const itemCode = product._id || product.id;
+      const result = await cartService.addToCart({
+        itemCode: itemCode,
+        qty: quantity,
+        deliveryPincode: userPincode,
+        deliveryAddress: '',
+        deliveryExpectedDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        custPhoneNum: '',
+        receiverMobileNum: '',
+      });
+
+      if (result.success) {
+        // Refresh cart items after adding - this will update cartCount automatically
+        await fetchCartItems();
+        return { success: true, message: result.message || 'Item added to cart successfully' };
       }
-    });
+
+      return { success: false, error: result.error || 'Failed to add item to cart' };
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      return { success: false, error: 'Unable to add item to cart. Please try again.' };
+    }
   };
 
-  const updateCartItemQuantity = (itemId, newQuantity) => {
+  // Fetch cart items from API
+  const fetchCartItems = async () => {
+    try {
+      const result = await cartService.getCartItems({ page: 1, limit: 50 });
+      
+      if (result.success && result.data) {
+        const orders = result.data.orders || [];
+        
+        const cartItems = orders
+          .map(order => {
+            const transformed = cartService.transformOrderToCartItem(order);
+            if (!transformed) {
+              console.warn('⚠️ Failed to transform order:', order);
+            }
+            return transformed;
+          })
+          .filter(item => item !== null);
+        
+        setCartItems(cartItems);
+        const totalCount = cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
+        setCartCount(totalCount);
+        return { success: true, items: cartItems };
+      }
+
+      // Empty cart
+      setCartItems([]);
+      setCartCount(0);
+      return { success: true, items: [] };
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      return { success: false, error: 'Unable to load cart items' };
+    }
+  };
+
+  const updateCartItemQuantity = async (leadId, itemCode, newQuantity) => {
     if (newQuantity <= 0) {
-      removeFromCart(itemId);
-      return;
+      return await removeFromCart(leadId);
     }
     
-    setCartItems(prevItems => {
-      const updatedItems = prevItems.map(item =>
-        item.id === itemId
-          ? { ...item, quantity: newQuantity }
-          : item
-      );
-      setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
-      return updatedItems;
-    });
+    try {
+      const result = await cartService.updateQuantity(leadId, {
+        itemCode: itemCode,
+        qty: newQuantity,
+      });
+
+      if (result.success) {
+        // Refresh cart items after update
+        await fetchCartItems();
+        return { success: true, message: result.message || 'Quantity updated successfully' };
+      }
+
+      return { success: false, error: result.error || 'Failed to update quantity' };
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      return { success: false, error: 'Unable to update quantity. Please try again.' };
+    }
   };
 
-  const removeFromCart = (itemId) => {
-    setCartItems(prevItems => {
-      const updatedItems = prevItems.filter(item => item.id !== itemId);
-      setCartCount(updatedItems.reduce((total, item) => total + item.quantity, 0));
-      return updatedItems;
-    });
+  const removeFromCart = async (leadId) => {
+    try {
+      const result = await cartService.removeFromCart(leadId);
+
+      if (result.success) {
+        // Refresh cart items after removal - this will update cartCount automatically
+        await fetchCartItems();
+        return { success: true, message: result.message || 'Item removed from cart successfully' };
+      }
+
+      return { success: false, error: result.error || 'Failed to remove item from cart' };
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+      return { success: false, error: 'Unable to remove item from cart. Please try again.' };
+    }
   };
 
-  const clearCart = () => {
-    setCartItems([]);
-    setCartCount(0);
+  const clearCart = async () => {
+    try {
+      const result = await cartService.clearCart();
+
+      if (result.success) {
+        setCartItems([]);
+        setCartCount(0);
+        return { success: true, message: result.message || 'Cart cleared successfully' };
+      }
+
+      return { success: false, error: result.error || 'Failed to clear cart' };
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      return { success: false, error: 'Unable to clear cart. Please try again.' };
+    }
   };
 
   // Notification functions
@@ -214,6 +291,7 @@ export const AppProvider = ({ children }) => {
     cartItems,
     cartCount,
     notificationCount,
+    fetchCartItems,
     addToCart,
     updateCartItemQuantity,
     removeFromCart,

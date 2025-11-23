@@ -14,10 +14,12 @@ const AppHeader = ({
   onNotificationPress,
   onHelpPress,
   onCartPress,
-  cartCount = 0,
+  cartCount: propCartCount,
   notificationCount = 0
 }) => {
-  const { markNotificationAsRead } = useAppContext();
+  const { markNotificationAsRead, cartCount: contextCartCount } = useAppContext();
+  // Always use context cartCount for immediate updates (prop is kept for backward compatibility but ignored)
+  const cartCount = contextCartCount || 0;
   
   const handleMenuPress = () => {
     if (onMenuPress) {

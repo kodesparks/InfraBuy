@@ -6,13 +6,14 @@ import { AppProvider } from './src/context/AppContext';
 import { AuthProvider } from './src/context/AuthContext';
 import { OrderProvider } from './src/context/OrderContext';
 import Toast from 'react-native-toast-message';
+import { navigationRef } from './src/services/navigation/navigationService';
 
 const App = () => {
   return (
     <AuthProvider>
       <AppProvider>
         <OrderProvider>
-          <NavigationContainer>
+          <NavigationContainer ref={navigationRef}>
             <AppNavigator />
           </NavigationContainer>
           <Toast />

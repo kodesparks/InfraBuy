@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../assets/styles/cart';
@@ -11,35 +12,87 @@ import { useOrderContext } from '../../context/OrderContext';
 const Cart = ({ navigation }) => {
   const [shippingAddress, setShippingAddress] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   
   // Get cart data from AppContext
   const { 
     cartItems, 
     cartCount, 
+    fetchCartItems,
     updateCartItemQuantity, 
     removeFromCart, 
     clearCart: clearCartContext 
   } = useAppContext();
+
+  // Fetch cart items on mount
+  useEffect(() => {
+    loadCartItems();
+  }, []);
+
+  // Reload cart items when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadCartItems();
+    }, [])
+  );
+
+  const loadCartItems = async () => {
+    setLoading(true);
+    const result = await fetchCartItems();
+    setLoading(false);
+    if (!result.success) {
+      Alert.alert('Error', result.error || 'Failed to load cart items');
+    }
+  };
 
   // Get order management from OrderContext
   const { createOrder } = useOrderContext();
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = typeof item.price === 'number' ? item.price : parseFloat(item.price.toString().replace(/[^\d.]/g, ''));
-      return total + (price * item.quantity);
+      return total + (item.totalPrice || 0);
     }, 0);
   };
 
-  const updateQuantity = (itemId, change) => {
-    const item = cartItems.find(item => item.id === itemId);
-    if (item) {
-      const newQuantity = Math.max(1, item.quantity + change);
-      updateCartItemQuantity(itemId, newQuantity);
+  const calculateSubtotal = () => {
+    return cartItems.reduce((total, item) => {
+      return total + ((item.currentPrice || 0) * (item.quantity || 1));
+    }, 0);
+  };
+
+  const calculateDeliveryCharges = () => {
+    return cartItems.reduce((total, item) => {
+      return total + (item.deliveryCharges || 0);
+    }, 0);
+  };
+
+  const updateQuantity = async (leadId, itemCode, currentQuantity, change) => {
+    const newQuantity = currentQuantity + change;
+    
+    // If quantity becomes 0 or less, delete the item instead
+    if (newQuantity <= 0) {
+      deleteItem(leadId);
+      return;
+    }
+
+    if (newQuantity === currentQuantity) return;
+
+    setRefreshing(true);
+    const result = await updateCartItemQuantity(leadId, itemCode, newQuantity);
+    
+    // Always refresh cart after update to show latest data and update badge
+    // fetchCartItems() in AppContext will update cartCount automatically
+    await loadCartItems();
+    
+    setRefreshing(false);
+
+    if (!result.success) {
+      Alert.alert('Error', result.error || 'Failed to update quantity');
     }
   };
 
-  const deleteItem = (itemId) => {
+  const deleteItem = async (leadId) => {
     Alert.alert(
       'Remove Item',
       'Are you sure you want to remove this item from cart?',
@@ -48,8 +101,15 @@ const Cart = ({ navigation }) => {
         { 
           text: 'Remove', 
           style: 'destructive',
-          onPress: () => {
-            removeFromCart(itemId);
+          onPress: async () => {
+            setRefreshing(true);
+            const result = await removeFromCart(leadId);
+            // Refresh cart to update badge immediately
+            await loadCartItems();
+            setRefreshing(false);
+            if (!result.success) {
+              Alert.alert('Error', result.error || 'Failed to remove item');
+            }
           }
         }
       ]
@@ -70,9 +130,17 @@ const Cart = ({ navigation }) => {
         { 
           text: 'Clear All', 
           style: 'destructive',
-          onPress: () => {
-            clearCartContext();
-            Alert.alert('Cart Cleared', 'All items have been removed from your cart.');
+          onPress: async () => {
+            setRefreshing(true);
+            const result = await clearCartContext();
+            // Refresh cart to update badge immediately
+            await loadCartItems();
+            setRefreshing(false);
+            if (result.success) {
+              Alert.alert('Cart Cleared', result.message || 'All items have been removed from your cart.');
+            } else {
+              Alert.alert('Error', result.error || 'Failed to clear cart');
+            }
           }
         }
       ]
@@ -125,12 +193,28 @@ const Cart = ({ navigation }) => {
 
   const total = calculateTotal();
 
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#723FED" />
+        <Text style={{ marginTop: 16, color: colors.textSecondary }}>Loading cart...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView 
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={loadCartItems}
+            colors={['#723FED']}
+          />
+        }
       >
         {/* Cart Items */}
         <View style={styles.cartCard}>
@@ -163,47 +247,106 @@ const Cart = ({ navigation }) => {
             </View>
           ) : (
             cartItems.map((item) => (
-              <View key={item.id} style={styles.cartItem}>
+              <View key={item.id || item.leadId} style={styles.cartItem}>
+                {/* Image Section */}
                 <View style={styles.itemImageContainer}>
-                  <Image source={item.image} style={styles.itemImage} />
+                  {item.image ? (
+                    <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
+                  ) : (
+                    <View style={styles.placeholderImageContainer}>
+                      <Icon name="image" size={24} color="#9CA3AF" />
+                    </View>
+                  )}
                 </View>
-                <View style={styles.itemInfo}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>₹{item.price} {item.unit}</Text>
-                  <Text style={styles.itemDetails}>{item.type} {item.grade}</Text>
-                </View>
-                <View style={styles.itemActions}>
-                  <View style={styles.quantityContainer}>
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() => updateQuantity(item.id, -1)}
-                    >
-                      <Icon name="minus" size={16} color={colors.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.quantityValue}>{item.quantity}</Text>
-                    <TouchableOpacity
-                      style={styles.quantityButton}
-                      onPress={() => updateQuantity(item.id, 1)}
-                    >
-                      <Icon name="plus" size={16} color={colors.text} />
-                    </TouchableOpacity>
+
+                {/* Product Info and Actions Section */}
+                <View style={styles.itemContent}>
+                  {/* Product Info */}
+                  <View style={styles.itemInfo}>
+                    <Text style={styles.itemName} numberOfLines={2}>{item.name || 'Unknown Product'}</Text>
+                    
+                    {/* Price Row */}
+                    <View style={styles.priceRow}>
+                      <Text style={styles.itemPrice}>₹{item.currentPrice?.toLocaleString() || '0'}</Text>
+                      {item._orderData?.items?.[0]?.itemCode?.units && (
+                        <Text style={styles.itemUnit}>/ {item._orderData.items[0].itemCode.units}</Text>
+                      )}
+                    </View>
+
+                    {/* Delivery Info */}
+                    {item.deliveryCharges > 0 && (
+                      <Text style={styles.deliveryCharge}>Delivery: ₹{item.deliveryCharges.toLocaleString()}</Text>
+                    )}
+
+                    {/* Brand and Category */}
+                    {item.brand && item.brand !== 'Unknown' && (
+                      <Text style={styles.itemBrand}>{item.brand}</Text>
+                    )}
+                    {item.category && (
+                      <Text style={styles.itemCategory} numberOfLines={1}>
+                        {item.category}{item.subCategory ? ` • ${item.subCategory}` : ''}
+                      </Text>
+                    )}
                   </View>
-                  <TouchableOpacity 
-                    style={styles.deleteButton}
-                    onPress={() => deleteItem(item.id)}
-                  >
-                    <Icon name="trash-2" size={16} color="white" />
-                  </TouchableOpacity>
+
+                  {/* Quantity and Actions Row */}
+                  <View style={styles.itemActionsRow}>
+                    {/* Quantity Controls */}
+                    <View style={styles.quantityContainer}>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateQuantity(item.leadId, item.itemCode, item.quantity, -1)}
+                        disabled={refreshing}
+                      >
+                        <Icon name="minus" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                      <Text style={styles.quantityValue}>{item.quantity}</Text>
+                      <TouchableOpacity
+                        style={styles.quantityButton}
+                        onPress={() => updateQuantity(item.leadId, item.itemCode, item.quantity, 1)}
+                        disabled={refreshing}
+                      >
+                        <Icon name="plus" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Delete Button */}
+                    <TouchableOpacity 
+                      style={styles.deleteButton}
+                      onPress={() => deleteItem(item.leadId)}
+                      disabled={refreshing}
+                    >
+                      <Icon name="trash-2" size={16} color="white" />
+                    </TouchableOpacity>
+
+                    {/* Item Total */}
+                    <View style={styles.itemTotal}>
+                      <Text style={styles.itemTotalLabel}>Total:</Text>
+                      <Text style={styles.itemTotalAmount}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
+                    </View>
+                  </View>
                 </View>
               </View>
             ))
           )}
 
-          {/* Total */}
+          {/* Totals */}
           {cartItems.length > 0 && (
-            <View style={styles.totalContainer}>
-              <Text style={styles.totalLabel}>Total:</Text>
-              <Text style={styles.totalAmount}>₹ {total.toLocaleString()}</Text>
+            <View style={styles.totalsContainer}>
+              <View style={styles.totalRow}>
+                <Text style={styles.totalLabel}>Subtotal:</Text>
+                <Text style={styles.totalValue}>₹{calculateSubtotal().toLocaleString()}</Text>
+              </View>
+              {calculateDeliveryCharges() > 0 && (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>Delivery Charges:</Text>
+                  <Text style={styles.totalValue}>₹{calculateDeliveryCharges().toLocaleString()}</Text>
+                </View>
+              )}
+              <View style={[styles.totalRow, styles.grandTotalRow]}>
+                <Text style={styles.grandTotalLabel}>Grand Total:</Text>
+                <Text style={styles.grandTotalAmount}>₹{total.toLocaleString()}</Text>
+              </View>
             </View>
           )}
 
@@ -222,18 +365,18 @@ const Cart = ({ navigation }) => {
             </View>
           )}
 
-          {/* Place Order Button */}
+          {/* Proceed to Checkout Button */}
           {cartItems.length > 0 && (
             <LinearGradient
-              colors={['#10B981', '#059669']}
+              colors={['#723FED', '#3B58EB']}
               style={styles.placeOrderButton}
             >
               <TouchableOpacity 
                 style={styles.placeOrderButtonInner}
-                onPress={handlePlaceOrder}
+                onPress={() => navigation.navigate('DeliveryDetails')}
               >
-                <Icon name="check-circle" size={20} color="white" />
-                <Text style={styles.placeOrderText}>Place Order</Text>
+                <Icon name="arrow-right" size={20} color="white" />
+                <Text style={styles.placeOrderText}>Proceed to Checkout</Text>
               </TouchableOpacity>
             </LinearGradient>
           )}

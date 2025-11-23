@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
@@ -25,7 +26,14 @@ const LoginScreen = ({ navigation }) => {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, checkAuthStatus } = useAuth();
+
+  // Re-check auth status when screen is focused (e.g., after token expiration)
+  useFocusEffect(
+    React.useCallback(() => {
+      checkAuthStatus();
+    }, [checkAuthStatus])
+  );
 
   // Basic validation
   const validateForm = () => {

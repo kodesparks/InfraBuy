@@ -12,12 +12,21 @@ const TOKEN_KEYS = {
  */
 export const storeTokens = async (accessToken, refreshToken, userData) => {
   try {
-    await AsyncStorage.multiSet([
+    // If userData is undefined, get existing userData or use empty object
+    let userDataToStore = userData;
+    if (!userDataToStore) {
+      const existingUserData = await getUserData();
+      userDataToStore = existingUserData || {};
+    }
+    
+    const storageItems = [
       [TOKEN_KEYS.ACCESS_TOKEN, accessToken],
       [TOKEN_KEYS.REFRESH_TOKEN, refreshToken],
-      [TOKEN_KEYS.USER_DATA, JSON.stringify(userData)],
+      [TOKEN_KEYS.USER_DATA, JSON.stringify(userDataToStore)],
       [TOKEN_KEYS.TOKEN_EXPIRY, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()] // 7 days
-    ]);
+    ];
+    
+    await AsyncStorage.multiSet(storageItems);
     return true;
   } catch (error) {
     console.error('Error storing tokens:', error);

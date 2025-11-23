@@ -29,9 +29,16 @@ export const AuthProvider = ({ children }) => {
         const userData = await getUserData();
         setUser(userData);
         setIsLoggedIn(true);
+      } else {
+        // Clear state if not authenticated
+        setUser(null);
+        setIsLoggedIn(false);
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      // On error, assume not authenticated
+      setUser(null);
+      setIsLoggedIn(false);
     } finally {
       setIsLoading(false);
     }

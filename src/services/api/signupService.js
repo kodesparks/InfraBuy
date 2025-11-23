@@ -1,11 +1,12 @@
 import { createResource } from './baseService';
+import { API_ENDPOINTS } from './config';
 
 /**
  * Register a new user
  */
 export const registerUser = async (userData) => {
   try {
-    const response = await createResource('/api/auth/signup', userData);
+    const response = await createResource(API_ENDPOINTS.auth.signup.url, userData);
     
     // Handle the new API response structure
     if (response.success && response.data) {

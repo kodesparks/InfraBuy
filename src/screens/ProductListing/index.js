@@ -1,46 +1,164 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, Alert, RefreshControl, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
-import { getAllProducts, getFilterOptionsByCategory } from '../../data/productsData';
+import AddToCartSuccessModal from '../../components/common/AddToCartSuccessModal';
+import { inventoryService, mapInventoryItemToProduct } from '../../services/api/inventoryService';
+import productListingStyles from '../../assets/styles/productListing';
+
+const { width: screenWidth } = Dimensions.get('window');
+
+// Category name mapping: Homepage category names -> API category names
+const CATEGORY_NAME_MAPPING = {
+  'Cement': 'Cement',
+  'Steel': 'Iron', // API uses "Iron" not "Steel"
+  'Concrete Mix': 'Concrete Mixer', // API uses "Concrete Mixer" not "Concrete Mix"
+  'Mixer': 'Concrete Mixer', // Alternative name
+  'Iron': 'Iron',
+  'Concrete Mixer': 'Concrete Mixer',
+};
+
+// Helper function to get API category name from homepage category name
+const getApiCategoryName = (homepageCategoryName) => {
+  if (!homepageCategoryName) return null;
+  const normalized = homepageCategoryName.trim();
+  return CATEGORY_NAME_MAPPING[normalized] || normalized;
+};
 
 const ProductListing = ({ navigation, route }) => {
   const { category } = route.params || { name: 'Products' };
   
-  // Get filter options and set default selections
-  const filterOptions = getFilterOptionsByCategory(category.name);
-  const [selectedCementType, setSelectedCementType] = useState(filterOptions.types[0] || 'All');
-  const [selectedGrade, setSelectedGrade] = useState(filterOptions.grades[0] || 'All');
+  // State management
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedSubCategory, setSelectedSubCategory] = useState('All');
   const [favorites, setFavorites] = useState(new Set());
   const [showPincodeModal, setShowPincodeModal] = useState(false);
+  const [pagination, setPagination] = useState(null);
+  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
+  const [addedProduct, setAddedProduct] = useState(null);
   
-  // Get delivery info from context
+  // Get delivery info and cart functions from context
   const { 
     userPincode, 
     getDeliveryInfoForCategory, 
     handlePincodeSet,
-    calculateProductPrice,
+    addToCart,
   } = useAppContext();
+
+  // Fetch products from API
+  useEffect(() => {
+    fetchProducts();
+  }, [category.name, userPincode, selectedSubCategory]);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Client-side filtering: Fetch ALL products (no category/subcategory in API call)
+      const params = {
+        page: 1,
+        limit: 100, // Reasonable limit for API (max might be 100)
+      };
+
+      // Pincode might be required by API - try with pincode if available
+      // If no pincode, API might still work but with limited functionality
+      if (userPincode) {
+        params.pincode = userPincode;
+      }
+
+      // Don't send category or subcategory to API - we filter on frontend
+      const result = await inventoryService.getInventoryWithPricing(params);
+
+      if (result.success && result.data) {
+        // Map API items to product format
+        const mappedProducts = result.data.inventory.map(mapInventoryItemToProduct);
+        setProducts(mappedProducts);
+        setPagination(result.data.pagination);
+      } else {
+        // Show detailed error message
+        const errorMsg = result.error || 'Unable to load products. Please try again.';
+        console.error('API Error:', errorMsg);
+        setError(errorMsg);
+        setProducts([]);
+      }
+    } catch (err) {
+      console.error('Error fetching products:', err);
+      
+      // Check if it's a validation error (400)
+      if (err.response?.status === 400) {
+        const errorData = err.response?.data;
+        let errorMsg = 'Validation error. ';
+        
+        if (errorData?.details && Array.isArray(errorData.details)) {
+          const validationErrors = errorData.details.map(detail => {
+            if (typeof detail === 'string') return detail;
+            if (detail.message) return detail.message;
+            if (detail.msg) return detail.msg;
+            return JSON.stringify(detail);
+          }).join(', ');
+          
+          errorMsg += validationErrors;
+        } else if (errorData?.error) {
+          errorMsg += errorData.error;
+        } else {
+          errorMsg += 'Please check your input and try again.';
+        }
+        
+        setError(errorMsg);
+      } else {
+        setError('Network error. Please check your internet connection.');
+      }
+      
+      setProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChangePincode = () => {
     setShowPincodeModal(true);
   };
 
-  // Get products from data file
-  const products = getAllProducts();
+  const handleRetry = () => {
+    fetchProducts();
+  };
 
+  // Client-side filtering: Filter products by category and subcategory
+  // Category names from API: "Cement", "Iron", "Concrete Mixer"
+  // Homepage sends: "Cement", "Steel", "Concrete Mix"
+  // Uses category name mapping to match homepage names to API names
   const filteredProducts = products.filter(product => {
-    // Filter by category first
-    const matchesCategory = product.category === category.name;
+    // Filter by category with name mapping
+    if (category.name && category.name !== 'All' && category.name !== 'Products') {
+      const productCategory = (product.category || '').trim();
+      // Map homepage category name to API category name
+      const apiCategoryName = getApiCategoryName(category.name);
+      const selectedCategory = (apiCategoryName || category.name).trim();
+      
+      // Case-insensitive comparison for better matching
+      if (productCategory.toLowerCase() !== selectedCategory.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Filter by subcategory if selected
+    if (selectedSubCategory && selectedSubCategory !== 'All') {
+      const productSubCategory = (product.subCategory || '').trim();
+      const selectedSub = selectedSubCategory.trim();
+      
+      // Case-insensitive comparison
+      if (productSubCategory.toLowerCase() !== selectedSub.toLowerCase()) {
+        return false;
+      }
+    }
     
-    // Then filter by type and grade
-    const matchesType = selectedCementType === 'All' || product.type === selectedCementType;
-    const matchesGrade = selectedGrade === 'All' || product.grade === selectedGrade;
-    
-    return matchesCategory && matchesType && matchesGrade;
+    return true;
   });
 
   const handleProductPress = (product) => {
@@ -63,41 +181,234 @@ const ProductListing = ({ navigation, route }) => {
     });
   };
 
-  const renderProductCard = (product) => (
-    <TouchableOpacity
-      key={product.id}
-      style={styles.productCard}
-      onPress={() => handleProductPress(product)}
-    >
-      <View style={styles.productImageContainer}>
-        <Image source={product.image} style={styles.productImage} />
-        {/* Favorite Heart Icon */}
-        <TouchableOpacity
-          style={styles.favoriteButton}
-          onPress={() => toggleFavorite(product.id)}
-        >
-          <Text style={[
-            styles.favoriteIcon,
-            favorites.has(product.id) && styles.favoriteIconActive
-          ]}>
-            {favorites.has(product.id) ? '❤️' : '🤍'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.productInfo}>
-        <Text style={styles.productName}>{product.name}</Text>
-        <View style={styles.productDetails}>
-          <Text style={styles.productType}>{product.type} {product.grade}</Text>
+  const renderProductCard = (product) => {
+    const discount = product.discount || 0;
+    const hasDiscount = discount > 0 && product.basePrice > product.currentPrice;
+    
+    return (
+      <TouchableOpacity
+        key={product.id || product._id}
+        style={styles.productCard}
+        onPress={() => handleProductPress(product)}
+        activeOpacity={0.8}
+      >
+        {/* Image Section */}
+        <View style={styles.productImageContainer}>
+          {product.image ? (
+            <Image 
+              source={{ uri: product.image }} 
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Icon name="image" size={40} color="#9CA3AF" />
+            </View>
+          )}
+          
+          {/* Discount Badge */}
+          {hasDiscount && (
+            <View style={styles.discountBadge}>
+              <Text style={styles.discountBadgeText}>{discount}% OFF</Text>
+            </View>
+          )}
+          
+          {/* Favorite/Wishlist Icon */}
+          <TouchableOpacity
+            style={styles.favoriteButton}
+            onPress={(e) => {
+              e.stopPropagation();
+              toggleFavorite(product.id || product._id);
+            }}
+          >
+            <Icon 
+              name={favorites.has(product.id || product._id) ? "heart" : "heart"} 
+              size={12} 
+              color={favorites.has(product.id || product._id) ? "#DC2626" : "#374151"} 
+            />
+          </TouchableOpacity>
         </View>
-        <View style={styles.priceContainer}>
-          <Text style={styles.productPrice}>
-            ₹{calculateProductPrice(product.price, category.name)}
+
+        {/* Content Section */}
+        <View style={styles.productInfo}>
+          {/* Brand Badge */}
+          {product.brand && (
+            <View style={styles.brandBadgeContainer}>
+              <View style={styles.brandBadge}>
+                <Text style={styles.brandBadgeText}>{product.brand}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Product Name */}
+          <Text style={styles.productName} numberOfLines={2}>
+            {product.name || product.itemDescription}
           </Text>
-          <Text style={styles.productUnit}>{product.unit}</Text>
+
+          {/* Item Code and Subcategory Row */}
+          <View style={styles.itemCodeRow}>
+            {product.formattedItemCode && (
+              <Text style={styles.itemCode}>{product.formattedItemCode}</Text>
+            )}
+            {product.subCategory && (
+              <View style={styles.subCategoryBadge}>
+                <Text style={styles.subCategoryBadgeText}>{product.subCategory}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Features */}
+          {product.features && product.features.length > 0 && (
+            <View style={styles.featuresContainer}>
+              {product.features.slice(0, 2).map((feature, index) => (
+                <View key={index} style={styles.featureItem}>
+                  <Icon name="check" size={10} color="#10B981" />
+                  <Text style={styles.featureText}>{feature}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Pricing Section */}
+          <View style={styles.pricingSection}>
+            {userPincode ? (
+              // With Pincode - Show detailed pricing
+              <>
+                <View style={styles.priceRow}>
+                  <Text style={styles.priceLabel}>Base Price:</Text>
+                  <View style={styles.priceValueContainer}>
+                    {hasDiscount && (
+                      <Text style={styles.originalPrice}>
+                        ₹{product.basePrice.toLocaleString()}
+                      </Text>
+                    )}
+                    <Text style={styles.discountedPrice}>
+                      ₹{product.currentPrice.toLocaleString()}/{product.units}
+                    </Text>
+                  </View>
+                </View>
+                
+                <View style={styles.deliveryRow}>
+                  <Text style={styles.priceLabel}>Delivery:</Text>
+                  {!product.isDeliveryAvailable ? (
+                    <Text style={styles.deliveryNotAvailable}>Not Available</Text>
+                  ) : product.isFreeDelivery ? (
+                    <Text style={styles.deliveryFree}>FREE</Text>
+                  ) : (
+                    <Text style={styles.deliveryCharge}>
+                      ₹{product.deliveryCharge.toLocaleString()}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.totalPriceRow}>
+                  <Text style={styles.totalPriceLabel}>Total:</Text>
+                  <Text style={styles.totalPriceValue}>
+                    ₹{product.totalPrice.toLocaleString()}/{product.units}
+                  </Text>
+                </View>
+
+                {product.distance > 0 && (
+                  <View style={styles.distanceInfo}>
+                    <Text style={styles.distanceText}>
+                      📍 {product.distance}km from {product.warehouseName}
+                    </Text>
+                    {!product.isDeliveryAvailable && product.deliveryReason && (
+                      <Text style={styles.deliveryReason}>{product.deliveryReason}</Text>
+                    )}
+                  </View>
+                )}
+              </>
+            ) : (
+              // Without Pincode - Show simple pricing
+              <>
+                <View style={styles.priceRow}>
+                  {hasDiscount ? (
+                    <>
+                      <Text style={styles.originalPrice}>
+                        ₹{product.basePrice.toLocaleString()}
+                      </Text>
+                      <Text style={styles.discountedPrice}>
+                        ₹{product.currentPrice.toLocaleString()}/{product.units}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.currentPrice}>
+                      ₹{product.currentPrice.toLocaleString()}/{product.units}
+                    </Text>
+                  )}
+                </View>
+                {hasDiscount && (
+                  <Text style={styles.discountText}>{discount}% OFF</Text>
+                )}
+                <Text style={styles.deliveryNote}>+ Delivery charges</Text>
+              </>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[
+                styles.addToCartButton,
+                !product.isDeliveryAvailable && styles.addToCartButtonDisabled
+              ]}
+              disabled={!product.isDeliveryAvailable}
+              onPress={async (e) => {
+                e.stopPropagation();
+                if (!userPincode) {
+                  Alert.alert('Pincode Required', 'Please set your delivery pincode to add items to cart.');
+                  return;
+                }
+                
+                // Add to cart - show modal on success, alert only on error
+                try {
+                  const result = await addToCart(product, 1);
+                  console.log('Add to cart result:', result);
+                  
+                  // Always show modal if success is true OR if there's no error (treat as success)
+                  // Only show alert if there's an explicit error
+                  if (result.success === true || (!result.error && result.message)) {
+                    // Set product data and show modal (NO ALERT)
+                    setAddedProduct(product);
+                    setShowAddToCartModal(true);
+                    console.log('Showing add to cart modal');
+                  } else if (result.error) {
+                    // Only show alert for actual errors
+                    Alert.alert('Error', result.error || 'Failed to add product to cart');
+                  } else {
+                    // Default: treat as success and show modal
+                    setAddedProduct(product);
+                    setShowAddToCartModal(true);
+                    console.log('Showing add to cart modal (default success)');
+                  }
+                } catch (error) {
+                  console.error('Error in add to cart:', error);
+                  Alert.alert('Error', 'Failed to add product to cart. Please try again.');
+                }
+              }}
+            >
+              <Text style={[
+                styles.addToCartButtonText,
+                !product.isDeliveryAvailable && styles.addToCartButtonTextDisabled
+              ]}>
+                {product.isDeliveryAvailable ? 'Add to Cart' : 'Delivery Not Available'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.viewDetailsButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                handleProductPress(product);
+              }}
+            >
+              <Icon name="eye" size={14} color="#1D4ED8" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const renderDeliveryLocation = () => {
     const deliveryInfo = getDeliveryInfoForCategory(category.name);
@@ -111,9 +422,6 @@ const ProductListing = ({ navigation, route }) => {
           <View style={styles.deliveryLocationInfo}>
             <Text style={styles.deliveryLocationTitle}>Delivery Location</Text>
             <Text style={styles.deliveryLocationPincode}>{userPincode || 'Not set'}</Text>
-            {deliveryInfo && (
-              <Text style={styles.deliveryTimeText}>{deliveryInfo.deliveryTime}</Text>
-            )}
           </View>
           <TouchableOpacity 
             style={styles.changeButton}
@@ -133,71 +441,124 @@ const ProductListing = ({ navigation, route }) => {
     );
   };
 
-  const renderFilterButton = (items, selectedItem, onSelect, title) => (
-    <View style={[
-      styles.filterSection,
-      title === 'Grade' && styles.filterSectionNoPadding
-    ]}>
-      <Text style={styles.filterTitle}>{title}</Text>
-      <View style={styles.filterButtons }>
-        {items.map(item => (
-          <TouchableOpacity
-            key={item}
-            style={[
-              styles.filterButton,
-              { flex: 1 },
-              title === 'Type' && styles.cementTypeButton,
-              title === 'Grade' && styles.gradeButton,
-            ]}
-            onPress={() => onSelect(item)}
-          >
-            {selectedItem === item ? (
-              <LinearGradient
-                colors={['#723FED', '#3B58EB']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[
-                  styles.filterButtonGradient,
-                  title === 'Type' && styles.cementTypeGradient,
-                  title === 'Grade' && styles.gradeGradient,
-                ]}
-              >
-                <Text style={styles.filterButtonTextActive}>{item}</Text>
-              </LinearGradient>
-            ) : (
-              <Text style={styles.filterButtonText}>{item}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
-      </View>
+  // Get unique subcategories from products for filter
+  const subCategories = ['All', ...new Set(products.map(p => p.subCategory).filter(Boolean))];
+
+  const renderLoadingState = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#723FED" />
+      <Text style={styles.loadingText}>Loading products...</Text>
     </View>
   );
+
+  const renderErrorState = () => (
+    <View style={styles.errorContainer}>
+      <Icon name="alert-circle" size={48} color="#DC2626" />
+      <Text style={styles.errorTitle}>Unable to Load Products</Text>
+      <Text style={styles.errorMessage}>{error}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyContainer}>
+      <Icon name="package" size={60} color="#9CA3AF" />
+      <Text style={styles.emptyText}>No products found</Text>
+      <Text style={styles.emptySubtext}>
+        We couldn't find any products in this category.
+        {'\n'}Try selecting a different category or check back later.
+      </Text>
+      <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+        <Text style={styles.retryButtonText}>Refresh</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderFilterButton = (items, selectedItem, onSelect, title) => {
+    if (!items || items.length === 0 || items.length === 1) return null;
+    
+    return (
+      <View style={styles.filterSection}>
+        <Text style={styles.filterTitle}>{title}</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterButtonsContainer}
+        >
+          {items.map(item => (
+            <TouchableOpacity
+              key={item}
+              style={styles.filterButton}
+              onPress={() => {
+                onSelect(item);
+                // Filter change will trigger useEffect to fetch new products
+              }}
+            >
+              {selectedItem === item ? (
+                <LinearGradient
+                  colors={['#723FED', '#3B58EB']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.filterButtonGradient}
+                >
+                  <Text style={styles.filterButtonTextActive}>{item}</Text>
+                </LinearGradient>
+              ) : (
+                <Text style={styles.filterButtonText}>{item}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
     <>
       <View style={styles.container}>
-        {/* Filters */}
         <ScrollView 
           style={styles.content} 
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={loading}
+              onRefresh={fetchProducts}
+              tintColor="#723FED"
+            />
+          }
         >
-        {/* Delivery Location Section */}
-        {renderDeliveryLocation()}
-          
-          {renderFilterButton(filterOptions.types, selectedCementType, setSelectedCementType, 'Type')}
-          {renderFilterButton(filterOptions.grades, selectedGrade, setSelectedGrade, 'Grade')}
+          {/* Delivery Location Section */}
+          {renderDeliveryLocation()}
 
-          {/* Products */}
-          <View style={styles.productsContainer}>
-            <View style={styles.productsGrid}>
-              {filteredProducts.map(renderProductCard)}
+          {/* Filters */}
+          {!loading && !error && subCategories.length > 1 && (
+            renderFilterButton(subCategories, selectedSubCategory, setSelectedSubCategory, 'Subcategory')
+          )}
+
+          {/* Loading State */}
+          {loading && renderLoadingState()}
+
+          {/* Error State */}
+          {!loading && error && renderErrorState()}
+
+          {/* Empty State */}
+          {!loading && !error && filteredProducts.length === 0 && renderEmptyState()}
+
+          {/* Products Grid */}
+          {!loading && !error && filteredProducts.length > 0 && (
+            <View style={styles.productsContainer}>
+              <View style={styles.productsGrid}>
+                {filteredProducts.map(renderProductCard)}
+              </View>
             </View>
-          </View>
+          )}
         </ScrollView>
       </View>
 
-      {/* Pincode Modal - Rendered outside the main container */}
+      {/* Pincode Modal */}
       <PincodeModal
         visible={showPincodeModal}
         onClose={() => setShowPincodeModal(false)}
@@ -206,22 +567,32 @@ const ProductListing = ({ navigation, route }) => {
           setShowPincodeModal(false);
         }}
       />
+
+      {/* Add to Cart Success Modal */}
+      <AddToCartSuccessModal
+        visible={showAddToCartModal}
+        onClose={() => setShowAddToCartModal(false)}
+        onContinueShopping={() => setShowAddToCartModal(false)}
+        onViewCart={() => {
+          setShowAddToCartModal(false);
+          navigation.navigate('Cart');
+        }}
+        productName={addedProduct?.name || addedProduct?.itemDescription || 'Product'}
+        quantity={1}
+        unit={addedProduct?.units || addedProduct?.unit || 'PIECE'}
+      />
     </>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-
+  ...productListingStyles,
   content: {
     flex: 1,
     paddingHorizontal: spacing.md,
   },
   scrollContent: {
-    paddingBottom: spacing.lg, // Add padding to the bottom of the ScrollView content
+    paddingBottom: spacing.lg,
   },
   deliveryLocationSection: {
     backgroundColor: 'white',
@@ -287,14 +658,15 @@ const styles = StyleSheet.create({
   filterSection: {
     marginVertical: spacing.md,
   },
-  filterSectionNoPadding: {
-    marginVertical: 0, // No padding for grade section
-  },
   filterTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
     marginBottom: spacing.sm,
+  },
+  filterButtonsContainer: {
+    flexDirection: 'row',
+    paddingRight: 20,
   },
   filterButtons: {
     flexDirection: 'row',
@@ -302,20 +674,16 @@ const styles = StyleSheet.create({
   },
   filterButton: {
     paddingHorizontal: spacing.md,
-    borderRadius: 12, // Semi-rounded design
+    paddingVertical: 10,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#723FED', // Purple border for inactive state
-    backgroundColor: '#E8E5FF', // Light purple filled background for inactive
+    borderColor: '#723FED',
+    backgroundColor: '#E8E5FF',
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    marginHorizontal: 2, // Small gap between buttons
-  },
-  cementTypeButton: {
-    paddingVertical: 12, // More padding for cement type buttons
-  },
-  gradeButton: {
-    paddingVertical: 10, // Less padding for grade buttons
+    marginRight: spacing.sm,
+    minWidth: 80,
   },
   filterButtonGradient: {
     position: 'absolute',
@@ -323,21 +691,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: 12, // Semi-rounded design
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0, // No border for gradient
-  },
-  cementTypeGradient: {
-    paddingVertical: 12, // More padding for cement type gradient
-  },
-  gradeGradient: {
-    paddingVertical: 10, // Less padding for grade gradient
+    borderWidth: 0,
   },
   filterButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#723FED', // Purple text for inactive state (matches border)
+    color: '#723FED',
     textAlign: 'center',
   },
   filterButtonTextActive: {
@@ -346,110 +708,96 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  productsContainer: {
-    marginTop: spacing.lg, // Add gap between filter buttons and product cards
-    paddingBottom: 100, // Extra padding for bottom navigation bar
-  },
   productsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 0,
+    flexDirection: 'column',
+    width: '100%',
+    alignItems: 'stretch',
   },
-  productCard: {
-    backgroundColor: '#E0E0E0', // Darker gray background for cards
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    width: '48%',
-    marginBottom: spacing.md,
-    marginHorizontal: '1%',
-  },
-  productImageContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  productImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-  },
-  stockBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: colors.success,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: borderRadius.full,
-  },
-  stockText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.textWhite,
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: -10,
-    right: -10, 
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
+  loadingContainer: {
+    flex: 1,
     justifyContent: 'center',
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  favoriteIcon: {
-    fontSize: 16,
-  },
-  favoriteIconActive: {
-    fontSize: 18,
-  },
-  productInfo: {
     alignItems: 'center',
+    paddingVertical: 60,
   },
-  productName: {
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+  },
+  errorTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  retryButton: {
+    backgroundColor: '#723FED',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-    textAlign: 'center',
   },
-  productDetails: {
-    marginBottom: spacing.sm,
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 40,
   },
-  productType: {
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
     fontSize: 14,
-    color: '#3B82F6',
+    color: '#6B7280',
     textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 20,
   },
-  priceContainer: {
+  placeholderImage: {
+    width: '100%',
+    height: 128,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  productPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-  },
-  productUnit: {
+  discountText: {
     fontSize: 12,
-    color: colors.textSecondary,
+    fontWeight: '500',
+    color: '#059669',
+    marginTop: 4,
+  },
+  deliveryNote: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 4,
+  },
+  currentPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
   },
 });
 

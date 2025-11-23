@@ -1,12 +1,13 @@
 import { createResource } from './baseService';
 import { clearTokens } from '../auth/tokenManager';
+import { API_ENDPOINTS } from './config';
 
 /**
  * Login user with email and password
  */
 export const loginUser = async (credentials) => {
   try {
-    const response = await createResource('/api/auth/login', credentials);
+    const response = await createResource(API_ENDPOINTS.auth.login.url, credentials);
     
     // Handle the new API response structure
     if (response.success && response.data) {
@@ -36,7 +37,7 @@ export const loginUser = async (credentials) => {
  * Refresh access token
  */
 export const refreshToken = async (refreshToken) => {
-  return createResource('/api/auth/refresh-token', { refreshToken });
+  return createResource(API_ENDPOINTS.auth.refreshToken.url, { refreshToken });
 };
 
 /**
@@ -45,7 +46,7 @@ export const refreshToken = async (refreshToken) => {
 export const logoutUser = async (refreshToken) => {
   try {
     // Call backend logout
-    const result = await createResource('/api/auth/logout', { refreshToken });
+    const result = await createResource(API_ENDPOINTS.auth.logout.url, { refreshToken });
     
     // Clear local tokens regardless of backend response
     await clearTokens();
