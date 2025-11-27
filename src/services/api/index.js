@@ -35,3 +35,6 @@ export { cartService } from './cartService';
 
 // Order Service
 export { orderService } from './orderService';
+
+// Profile Service
+export * from './profileService';

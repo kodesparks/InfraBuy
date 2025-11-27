@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { isAuthenticated, getUserData, clearTokens } from '../services/auth/tokenManager';
-import { logoutUser } from '../services/api';
+import { isAuthenticated, getUserData, clearTokens, storeTokens, getAccessToken, getRefreshToken } from '../services/auth/tokenManager';
+import { logoutUser, getUserProfile } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -26,9 +26,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const authenticated = await isAuthenticated();
       if (authenticated) {
-        const userData = await getUserData();
-        setUser(userData);
-        setIsLoggedIn(true);
+        // Fetch fresh profile from API
+        await refreshProfile();
       } else {
         // Clear state if not authenticated
         setUser(null);
@@ -41,6 +40,59 @@ export const AuthProvider = ({ children }) => {
       setIsLoggedIn(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const refreshProfile = async (updatedUserData = null) => {
+    try {
+      // If updated user data is provided (from update API responses), use it directly
+      if (updatedUserData) {
+        setUser(updatedUserData);
+        setIsLoggedIn(true);
+        // Update stored user data
+        const accessToken = await getAccessToken();
+        const refreshToken = await getRefreshToken();
+        if (accessToken && refreshToken) {
+          await storeTokens(accessToken, refreshToken, updatedUserData);
+        }
+        return updatedUserData;
+      }
+
+      // Try to fetch from API (may return 404 if endpoint doesn't exist)
+      const profileResult = await getUserProfile();
+      if (profileResult.success && profileResult.data) {
+        const userData = profileResult.data;
+        setUser(userData);
+        setIsLoggedIn(true);
+        // Update stored user data
+        const accessToken = await getAccessToken();
+        const refreshToken = await getRefreshToken();
+        if (accessToken && refreshToken) {
+          await storeTokens(accessToken, refreshToken, userData);
+        }
+        return userData;
+      } else {
+        // Fallback to stored user data if API fails (including 404)
+        console.log('⚠️ Profile API not available, using stored user data');
+        const userData = await getUserData();
+        if (userData) {
+          setUser(userData);
+          setIsLoggedIn(true);
+        } else {
+          setUser(null);
+          setIsLoggedIn(false);
+        }
+        return userData;
+      }
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+      // Fallback to stored user data
+      const userData = await getUserData();
+      if (userData) {
+        setUser(userData);
+        setIsLoggedIn(true);
+      }
+      return userData;
     }
   };
 
@@ -68,7 +120,8 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    refreshProfile
   };
 
   return (

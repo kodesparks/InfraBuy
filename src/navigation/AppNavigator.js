@@ -15,6 +15,7 @@ import ChatScreen from '../screens/ChatScreen/index';
 import SupportScreen from '../screens/SupportScreen/index';
 import TrackingScreen from '../screens/TrackingScreen/index';
 import DeliveryDetails from '../screens/DeliveryDetails/index';
+import PaymentScreen from '../screens/PaymentScreen/index';
 import AppHeader from '../components/common/AppHeader';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
@@ -452,6 +453,15 @@ const DeliveryDetailsWrapper = ({ navigation }) => {
   );
 };
 
+const PaymentScreenWrapper = ({ navigation, route }) => {
+  const { cartCount } = useAppContext();
+  return (
+    <View style={{ flex: 1 }}>
+      <PaymentScreen navigation={navigation} route={route} />
+    </View>
+  );
+};
+
 const TrackingScreenWrapper = ({ navigation, route }) => {
   const { cartCount } = useAppContext();
   return (
@@ -607,6 +617,7 @@ const AppNavigator = () => {
       <Stack.Screen name="ProductDetail" component={ProductDetailWrapper} />
       <Stack.Screen name="Cart" component={CartScreenWrapper} />
       <Stack.Screen name="DeliveryDetails" component={DeliveryDetailsWrapper} />
+      <Stack.Screen name="Payment" component={PaymentScreenWrapper} />
       <Stack.Screen name="Profile" component={ProfileScreenWrapper} />
       <Stack.Screen name="Notifications" component={NotificationsScreenWrapper} />
       <Stack.Screen name="Support" component={SupportScreenWrapper} />

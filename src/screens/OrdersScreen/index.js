@@ -16,13 +16,11 @@ const OrdersScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [showChangeAddressModal, setShowChangeAddressModal] = useState(false);
   const [showChangeDateModal, setShowChangeDateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('');
   const [orderDetails, setOrderDetails] = useState(null);
   const [changeEligibility, setChangeEligibility] = useState(null);
 
@@ -109,40 +107,36 @@ const OrdersScreen = ({ navigation }) => {
   };
 
   const handlePayment = (order) => {
-    setSelectedOrder(order);
-    setShowPaymentModal(true);
+    // Navigate to Payment screen with order data
+    const originalOrder = order._orderData || {};
+    const customerInfo = originalOrder.custUserId || {};
+    
+    navigation.navigate('Payment', {
+      orderData: {
+        id: order.id || order.leadId,
+        orderNumber: order.orderNumber || order.leadId || order.id,
+        items: order.items || [],
+        totalAmount: order.totalAmount || 0,
+        finalAmount: order.totalAmount || 0,
+        deliveryAddress: order.deliveryAddress || '',
+        deliveryPincode: order.deliveryPincode || '',
+        customerInfo: {
+          name: customerInfo.name || '',
+          phone: originalOrder.custPhoneNum || originalOrder.receiverMobileNum || customerInfo.phone || '',
+          email: customerInfo.email || '',
+        },
+      },
+      deliveryDetails: {
+        fullName: customerInfo.name || '',
+        phoneNumber: originalOrder.custPhoneNum || originalOrder.receiverMobileNum || customerInfo.phone || '',
+        deliveryAddress: order.deliveryAddress || '',
+        city: '',
+        state: '',
+        pinCode: order.deliveryPincode || '',
+      },
+    });
   };
 
-  const handleProcessPayment = async () => {
-    if (!paymentMethod.trim()) {
-      Alert.alert('Error', 'Please select a payment method');
-      return;
-    }
-
-    if (!selectedOrder) return;
-
-    try {
-      // Call payment API
-      // For now, show success message
-      Alert.alert(
-        'Payment Successful!',
-        `Your payment has been processed.\nOrder: ${selectedOrder.orderNumber}`,
-        [
-          { 
-            text: 'OK', 
-            onPress: () => {
-              setShowPaymentModal(false);
-              setSelectedOrder(null);
-              setPaymentMethod('');
-              fetchOrders(selectedStatus !== 'all' ? selectedStatus : null);
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to process payment. Please try again.');
-    }
-  };
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -392,77 +386,6 @@ const OrdersScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Payment Modal */}
-      <Modal
-        visible={showPaymentModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowPaymentModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Complete Payment</Text>
-              <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
-                <Icon name="x" size={24} color={colors.text} />
-              </TouchableOpacity>
-            </View>
-
-            {selectedOrder && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.paymentDetails}>
-                  <Text style={styles.paymentOrderId}>Order #{selectedOrder.orderNumber || selectedOrder.id}</Text>
-                  <Text style={styles.paymentAmount}>
-                    {formatCurrency(selectedOrder.totalAmount)}
-                  </Text>
-                  
-                  <View style={styles.paymentMethods}>
-                    <Text style={styles.paymentMethodsTitle}>Select Payment Method:</Text>
-                    
-                    <TouchableOpacity 
-                      style={[styles.paymentMethodOption, paymentMethod === 'UPI' && styles.selectedPaymentMethod]}
-                      onPress={() => setPaymentMethod('UPI')}
-                    >
-                      <Icon name="smartphone" size={20} color="#723FED" />
-                      <Text style={styles.paymentMethodText}>UPI Payment</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={[styles.paymentMethodOption, paymentMethod === 'Card' && styles.selectedPaymentMethod]}
-                      onPress={() => setPaymentMethod('Card')}
-                    >
-                      <Icon name="credit-card" size={20} color="#723FED" />
-                      <Text style={styles.paymentMethodText}>Credit/Debit Card</Text>
-                    </TouchableOpacity>
-                    
-                    <TouchableOpacity 
-                      style={[styles.paymentMethodOption, paymentMethod === 'Net Banking' && styles.selectedPaymentMethod]}
-                      onPress={() => setPaymentMethod('Net Banking')}
-                    >
-                      <Icon name="briefcase" size={20} color="#723FED" />
-                      <Text style={styles.paymentMethodText}>Net Banking</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <TouchableOpacity 
-                    style={[styles.payNowButton, !paymentMethod && styles.payNowButtonDisabled]}
-                    onPress={handleProcessPayment}
-                    disabled={!paymentMethod}
-                  >
-                    <LinearGradient
-                      colors={paymentMethod ? ['#723FED', '#3B58EB'] : ['#9CA3AF', '#6B7280']}
-                      style={styles.payNowGradient}
-                    >
-                      <Icon name="check-circle" size={20} color="#FFFFFF" />
-                      <Text style={styles.payNowText}>Pay Now</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                </View>
-              </ScrollView>
-            )}
-          </View>
-        </View>
-      </Modal>
 
       {/* Order Details Modal */}
       <Modal

@@ -142,6 +142,12 @@ const DeliveryDetails = ({ navigation, route }) => {
     return isValid && Object.keys(errors).length === 0;
   };
 
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => {
+      return total + (item.totalPrice || (item.currentPrice || 0) * (item.quantity || 1));
+    }, 0);
+  };
+
   const handleInputChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
     // Clear error when user starts typing
@@ -212,17 +218,15 @@ const DeliveryDetails = ({ navigation, route }) => {
           ]
         );
       } else {
-        // All orders placed successfully
+        // All orders placed successfully - Show success message and navigate to Orders
+        await fetchCartItems();
         Alert.alert(
           'Order Placed Successfully!',
-          'Your order has been placed. You can track it in the Orders section.',
+          'Your order has been placed successfully. Please wait for vendor approval. You can complete the payment from the Orders section once the order is approved.',
           [
             { 
               text: 'View Orders', 
-              onPress: async () => {
-                // Refresh cart (will be empty as orders are no longer pending)
-                await fetchCartItems();
-                // Navigate to orders page
+              onPress: () => {
                 navigation.navigate('MainApp', { screen: 'Orders' });
               }
             }
