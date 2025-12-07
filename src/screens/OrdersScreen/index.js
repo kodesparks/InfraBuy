@@ -16,7 +16,6 @@ const OrdersScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [showOrderDetailsModal, setShowOrderDetailsModal] = useState(false);
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [showChangeAddressModal, setShowChangeAddressModal] = useState(false);
@@ -71,15 +70,8 @@ const OrdersScreen = ({ navigation }) => {
     }, [selectedStatus])
   );
 
-  // Filter orders by search query
-  const filteredOrders = orders.filter(order => {
-    if (!searchQuery.trim()) return true;
-    const query = searchQuery.toLowerCase();
-    return (
-      order.orderNumber?.toLowerCase().includes(query) ||
-      order.items?.some(item => item.name?.toLowerCase().includes(query))
-    );
-  });
+  // No search filtering - show all orders
+  const filteredOrders = orders;
 
   const handleViewOrder = async (order) => {
     setSelectedOrder(order);
@@ -355,25 +347,6 @@ const OrdersScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBox}>
-          <Icon name="search" size={20} color={colors.textSecondary} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by order number or product..."
-            placeholderTextColor={colors.textSecondary}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Icon name="x" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       {/* Status Filter */}
       <ScrollView
         horizontal
@@ -423,9 +396,7 @@ const OrdersScreen = ({ navigation }) => {
               <Icon name="package" size={64} color={colors.textSecondary} />
               <Text style={styles.emptyStateTitle}>No Orders Found</Text>
               <Text style={styles.emptyStateText}>
-                {searchQuery
-                  ? 'No orders match your search'
-                  : 'Your orders will appear here once you place them'}
+                Your orders will appear here once you place them
               </Text>
             </View>
           ) : (

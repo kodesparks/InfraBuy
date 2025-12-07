@@ -159,7 +159,12 @@ export const cartService = {
 
       const response = await apiClient.put(url, requestData);
       
-      if (response.data?.success) {
+      // Treat as success if status is 200 and no explicit error
+      const isHttpSuccess = response.status === 200 || response.status === 201;
+      const hasExplicitError = response.data?.error && response.data.error !== '';
+      const hasExplicitFailure = response.data?.success === false;
+      
+      if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
           data: response.data.order || response.data,
@@ -193,10 +198,15 @@ export const cartService = {
 
       const response = await apiClient.delete(url);
       
-      if (response.data?.success) {
+      // Treat as success if status is 200/204 and no explicit error
+      const isHttpSuccess = response.status === 200 || response.status === 201 || response.status === 204;
+      const hasExplicitError = response.data?.error && response.data.error !== '';
+      const hasExplicitFailure = response.data?.success === false;
+      
+      if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
-          message: response.data.message || 'Item removed from cart successfully',
+          message: response.data?.message || 'Item removed from cart successfully',
         };
       }
 
@@ -223,10 +233,15 @@ export const cartService = {
 
       const response = await apiClient.delete(url);
       
-      if (response.data?.success) {
+      // Treat as success if status is 200/204 and no explicit error
+      const isHttpSuccess = response.status === 200 || response.status === 201 || response.status === 204;
+      const hasExplicitError = response.data?.error && response.data.error !== '';
+      const hasExplicitFailure = response.data?.success === false;
+      
+      if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
-          message: response.data.message || 'Cart cleared successfully',
+          message: response.data?.message || 'Cart cleared successfully',
         };
       }
 

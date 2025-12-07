@@ -174,6 +174,7 @@ export default StyleSheet.create({
     backgroundColor: '#F3F4F6',
     borderRadius: 8,
     padding: 4,
+    flexShrink: 0,
   },
   quantityButton: {
     width: 32,
@@ -193,6 +194,20 @@ export default StyleSheet.create({
     minWidth: 30,
     textAlign: 'center',
   },
+  quantityInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    minWidth: 50,
+    maxWidth: 80,
+    textAlign: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
   deleteButton: {
     width: 36,
     height: 36,
@@ -201,10 +216,12 @@ export default StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+    flexShrink: 0,
   },
   itemTotal: {
-    marginLeft: 'auto',
+    width: '100%',
     alignItems: 'flex-end',
+    marginTop: 8,
   },
   itemTotalLabel: {
     fontSize: 11,

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, Image, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 import styles from '../../assets/styles/cart';
 import OrderConfirmation from '../../components/OrderConfirmation';
 import { colors } from '../../assets/styles/global';
@@ -13,6 +14,7 @@ const Cart = ({ navigation }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [quantityInputs, setQuantityInputs] = useState({}); // Track input values per item
   
   // Get cart data from AppContext
   const { 
@@ -41,7 +43,11 @@ const Cart = ({ navigation }) => {
     const result = await fetchCartItems();
     setLoading(false);
     if (!result.success) {
-      Alert.alert('Error', result.error || 'Failed to load cart items');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to load cart items',
+      });
     }
   };
 
@@ -86,94 +92,111 @@ const Cart = ({ navigation }) => {
     
     setRefreshing(false);
 
-    if (!result.success) {
-      Alert.alert('Error', result.error || 'Failed to update quantity');
+    if (result.success) {
+      // Don't show toast on success - silent update
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to update quantity',
+      });
+    }
+  };
+
+  const updateQuantityDirect = async (leadId, itemCode, newQuantityStr) => {
+    const newQuantity = parseInt(newQuantityStr, 10);
+    
+    // Validate input
+    if (isNaN(newQuantity) || newQuantity < 1) {
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Quantity',
+        text2: 'Please enter a valid quantity (minimum 1)',
+      });
+      return;
+    }
+
+    setRefreshing(true);
+    const result = await updateCartItemQuantity(leadId, itemCode, newQuantity);
+    
+    await loadCartItems();
+    
+    setRefreshing(false);
+
+    if (result.success) {
+      // Don't show toast on success - silent update
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to update quantity',
+      });
     }
   };
 
   const deleteItem = async (leadId) => {
-    Alert.alert(
-      'Remove Item',
-      'Are you sure you want to remove this item from cart?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Remove', 
-          style: 'destructive',
-          onPress: async () => {
-            setRefreshing(true);
-            const result = await removeFromCart(leadId);
-            // Refresh cart to update badge immediately
-            await loadCartItems();
-            setRefreshing(false);
-            if (!result.success) {
-              Alert.alert('Error', result.error || 'Failed to remove item');
-            }
-          }
-        }
-      ]
-    );
+    setRefreshing(true);
+    const result = await removeFromCart(leadId);
+    // Refresh cart to update badge immediately
+    await loadCartItems();
+    setRefreshing(false);
+    if (!result.success) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to remove item',
+      });
+    } else {
+      Toast.show({
+        type: 'success',
+        text1: 'Item Removed',
+        text2: 'Item has been removed from cart',
+      });
+    }
   };
 
-  const handleClearCart = () => {
+  const handleClearCart = async () => {
     if (cartItems.length === 0) {
-      Alert.alert('Cart Empty', 'Your cart is already empty.');
+      Toast.show({
+        type: 'info',
+        text1: 'Cart Empty',
+        text2: 'Your cart is already empty.',
+      });
       return;
     }
 
-    Alert.alert(
-      'Clear Cart',
-      'Are you sure you want to remove all items from your cart?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Clear All', 
-          style: 'destructive',
-          onPress: async () => {
-            setRefreshing(true);
-            const result = await clearCartContext();
-            // Refresh cart to update badge immediately
-            await loadCartItems();
-            setRefreshing(false);
-            if (result.success) {
-              Alert.alert('Cart Cleared', result.message || 'All items have been removed from your cart.');
-            } else {
-              Alert.alert('Error', result.error || 'Failed to clear cart');
-            }
-          }
-        }
-      ]
-    );
+    setRefreshing(true);
+    const result = await clearCartContext();
+    // Refresh cart to update badge immediately
+    await loadCartItems();
+    setRefreshing(false);
+    if (result.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Cart Cleared',
+        text2: result.message || 'All items have been removed from your cart.',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to clear cart',
+      });
+    }
   };
 
   const handlePlaceOrder = () => {
     if (cartItems.length === 0) {
-      Alert.alert('Empty Cart', 'Please add items to your cart before placing an order.');
+      Toast.show({
+        type: 'error',
+        text1: 'Empty Cart',
+        text2: 'Please add items to your cart before placing an order.',
+      });
       return;
     }
     
-    // Create order from cart items
-    const totalAmount = calculateTotal();
-    console.log('Creating order with cart items:', cartItems);
-    console.log('Total amount:', totalAmount);
-    
-    const newOrder = createOrder(cartItems, '', totalAmount);
-    console.log('Created order:', newOrder);
-    
-    Alert.alert(
-      'Order Created Successfully!',
-      `Order ID: ${newOrder.id}\nTotal Amount: ₹${totalAmount.toFixed(2)}\n\nPlease complete payment to proceed.`,
-      [
-        { 
-          text: 'Complete Payment', 
-          onPress: () => {
-            clearCartContext();
-            navigation.navigate('Orders');
-          }
-        },
-        { text: 'Continue Shopping', style: 'cancel' }
-      ]
-    );
+    // Navigate to delivery details
+    navigation.navigate('DeliveryDetails');
   };
 
   const handleContinueShopping = () => {
@@ -291,7 +314,86 @@ const Cart = ({ navigation }) => {
                       >
                         <Icon name="minus" size={16} color={colors.text} />
                       </TouchableOpacity>
-                      <Text style={styles.quantityValue}>{item.quantity}</Text>
+                      <TextInput
+                        style={styles.quantityInput}
+                        value={quantityInputs[`${item.leadId}_${item.itemCode}`] !== undefined 
+                          ? String(quantityInputs[`${item.leadId}_${item.itemCode}`])
+                          : String(item.quantity)}
+                        keyboardType="number-pad"
+                        onChangeText={(text) => {
+                          // Update local state for this input
+                          const key = `${item.leadId}_${item.itemCode}`;
+                          setQuantityInputs(prev => ({
+                            ...prev,
+                            [key]: text,
+                          }));
+                        }}
+                        onSubmitEditing={(e) => {
+                          const key = `${item.leadId}_${item.itemCode}`;
+                          const text = (quantityInputs[key] || e.nativeEvent?.text || '').trim();
+                          if (text && text !== '') {
+                            const numValue = parseInt(text, 10);
+                            if (!isNaN(numValue) && numValue > 0) {
+                              updateQuantityDirect(item.leadId, item.itemCode, text);
+                              // Clear local input state after successful update
+                              setQuantityInputs(prev => {
+                                const newState = { ...prev };
+                                delete newState[key];
+                                return newState;
+                              });
+                            } else {
+                              // Reset to current quantity if invalid
+                              updateQuantityDirect(item.leadId, item.itemCode, String(item.quantity));
+                              setQuantityInputs(prev => {
+                                const newState = { ...prev };
+                                delete newState[key];
+                                return newState;
+                              });
+                            }
+                          } else {
+                            // Reset to current quantity if empty
+                            updateQuantityDirect(item.leadId, item.itemCode, String(item.quantity));
+                            setQuantityInputs(prev => {
+                              const newState = { ...prev };
+                              delete newState[key];
+                              return newState;
+                            });
+                          }
+                        }}
+                        onBlur={(e) => {
+                          const key = `${item.leadId}_${item.itemCode}`;
+                          const text = (quantityInputs[key] || e.nativeEvent?.text || '').trim();
+                          if (!text || text === '' || parseInt(text, 10) < 1) {
+                            // Reset to current quantity if invalid
+                            updateQuantityDirect(item.leadId, item.itemCode, String(item.quantity));
+                            setQuantityInputs(prev => {
+                              const newState = { ...prev };
+                              delete newState[key];
+                              return newState;
+                            });
+                          } else {
+                            const numValue = parseInt(text, 10);
+                            if (!isNaN(numValue) && numValue > 0) {
+                              // Update on blur if valid
+                              updateQuantityDirect(item.leadId, item.itemCode, text);
+                              setQuantityInputs(prev => {
+                                const newState = { ...prev };
+                                delete newState[key];
+                                return newState;
+                              });
+                            } else {
+                              // Reset to current quantity if invalid
+                              updateQuantityDirect(item.leadId, item.itemCode, String(item.quantity));
+                              setQuantityInputs(prev => {
+                                const newState = { ...prev };
+                                delete newState[key];
+                                return newState;
+                              });
+                            }
+                          }
+                        }}
+                        selectTextOnFocus
+                      />
                       <TouchableOpacity
                         style={styles.quantityButton}
                         onPress={() => updateQuantity(item.leadId, item.itemCode, item.quantity, 1)}
@@ -309,12 +411,12 @@ const Cart = ({ navigation }) => {
                     >
                       <Icon name="trash-2" size={16} color="white" />
                     </TouchableOpacity>
+                  </View>
 
-                    {/* Item Total */}
-                    <View style={styles.itemTotal}>
-                      <Text style={styles.itemTotalLabel}>Total:</Text>
-                      <Text style={styles.itemTotalAmount}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
-                    </View>
+                  {/* Item Total - on new line */}
+                  <View style={styles.itemTotal}>
+                    <Text style={styles.itemTotalLabel}>Total:</Text>
+                    <Text style={styles.itemTotalAmount}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
                   </View>
                 </View>
               </View>
