@@ -10,7 +10,6 @@ import { useAppContext } from '../../context/AppContext';
 import { useOrderContext } from '../../context/OrderContext';
 
 const Cart = ({ navigation }) => {
-  const [shippingAddress, setShippingAddress] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -152,19 +151,13 @@ const Cart = ({ navigation }) => {
       Alert.alert('Empty Cart', 'Please add items to your cart before placing an order.');
       return;
     }
-
-    if (!shippingAddress.trim()) {
-      Alert.alert('Error', 'Please enter your shipping address');
-      return;
-    }
     
     // Create order from cart items
     const totalAmount = calculateTotal();
     console.log('Creating order with cart items:', cartItems);
     console.log('Total amount:', totalAmount);
-    console.log('Shipping address:', shippingAddress);
     
-    const newOrder = createOrder(cartItems, shippingAddress, totalAmount);
+    const newOrder = createOrder(cartItems, '', totalAmount);
     console.log('Created order:', newOrder);
     
     Alert.alert(
@@ -175,7 +168,6 @@ const Cart = ({ navigation }) => {
           text: 'Complete Payment', 
           onPress: () => {
             clearCartContext();
-            setShippingAddress('');
             navigation.navigate('Orders');
           }
         },
@@ -187,7 +179,6 @@ const Cart = ({ navigation }) => {
   const handleContinueShopping = () => {
     setShowConfirmation(false);
     clearCartContext(); // Clear cart after successful order
-    setShippingAddress(''); // Clear address
     navigation.navigate('MainApp');
   };
 
@@ -350,21 +341,6 @@ const Cart = ({ navigation }) => {
             </View>
           )}
 
-          {/* Shipping Address */}
-          {cartItems.length > 0 && (
-            <View style={styles.addressContainer}>
-              <Text style={styles.addressLabel}>Shipping Address</Text>
-              <TextInput
-                style={styles.addressInput}
-                placeholder="Enter your shipping address"
-                value={shippingAddress}
-                onChangeText={setShippingAddress}
-                multiline
-                numberOfLines={3}
-              />
-            </View>
-          )}
-
           {/* Proceed to Checkout Button */}
           {cartItems.length > 0 && (
             <LinearGradient
@@ -391,7 +367,7 @@ const Cart = ({ navigation }) => {
         orderDetails={{
           items: cartItems,
           total: total,
-          address: shippingAddress
+          address: ''
         }}
       />
     </View>

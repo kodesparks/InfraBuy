@@ -6,13 +6,14 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius, typography } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import { cartService } from '../../services/api/cartService';
@@ -21,6 +22,7 @@ const DeliveryDetails = ({ navigation, route }) => {
   const { cartItems, userPincode, fetchCartItems } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Form state - pre-fill pincode if available
   const [formData, setFormData] = useState({
@@ -158,12 +160,20 @@ const DeliveryDetails = ({ navigation, route }) => {
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) {
-      Alert.alert('Validation Error', 'Please fill all required fields correctly.');
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Please fill all required fields correctly.',
+      });
       return;
     }
 
     if (!cartItems || cartItems.length === 0) {
-      Alert.alert('Empty Cart', 'Your cart is empty. Please add items to cart first.');
+      Toast.show({
+        type: 'error',
+        text1: 'Empty Cart',
+        text2: 'Your cart is empty. Please add items to cart first.',
+      });
       return;
     }
 
@@ -205,37 +215,36 @@ const DeliveryDetails = ({ navigation, route }) => {
       const failedOrders = results.filter(r => !r.success);
       
       if (failedOrders.length > 0) {
-        const errorMessages = failedOrders.map(r => r.error).join('\n');
-        Alert.alert(
-          'Order Placement Failed',
-          `Some orders could not be placed:\n${errorMessages}`,
-          [
-            { text: 'OK', onPress: async () => {
-              // Refresh cart and navigate to orders
-              await fetchCartItems();
-              navigation.navigate('MainApp', { screen: 'Orders' });
-            }}
-          ]
-        );
+        const errorMessages = failedOrders.map(r => r.error).join(', ');
+        Toast.show({
+          type: 'error',
+          text1: 'Order Placement Failed',
+          text2: `Some orders could not be placed: ${errorMessages}`,
+        });
+        // Refresh cart and navigate to orders
+        await fetchCartItems();
+        setTimeout(() => {
+          navigation.navigate('MainApp', { screen: 'Orders' });
+        }, 2000);
       } else {
         // All orders placed successfully - Show success message and navigate to Orders
         await fetchCartItems();
-        Alert.alert(
-          'Order Placed Successfully!',
-          'Your order has been placed successfully. Please wait for vendor approval. You can complete the payment from the Orders section once the order is approved.',
-          [
-            { 
-              text: 'View Orders', 
-              onPress: () => {
-                navigation.navigate('MainApp', { screen: 'Orders' });
-              }
-            }
-          ]
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Order Placed Successfully!',
+          text2: 'Your order has been placed. Please wait for vendor approval. You can complete the payment from the Orders section once the order is approved.',
+        });
+        setTimeout(() => {
+          navigation.navigate('MainApp', { screen: 'Orders' });
+        }, 2000);
       }
     } catch (error) {
       console.error('Error placing orders:', error);
-      Alert.alert('Error', 'Failed to place orders. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to place orders. Please try again.',
+      });
     } finally {
       setLoading(false);
     }
@@ -326,9 +335,76 @@ const DeliveryDetails = ({ navigation, route }) => {
             maxLength: 6,
           })}
           
-          {renderInputField('preferredDeliveryDate', 'Preferred Delivery Date', 'YYYY-MM-DD (optional)', {
-            keyboardType: 'default',
-          })}
+          {/* Date Picker for Delivery Date */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>
+              Preferred Delivery Date <Text style={styles.optional}>(optional)</Text>
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.datePickerButton,
+                errors.preferredDeliveryDate && styles.inputError,
+              ]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={[
+                styles.datePickerText,
+                !formData.preferredDeliveryDate && styles.datePickerPlaceholder
+              ]}>
+                {formData.preferredDeliveryDate 
+                  ? new Date(formData.preferredDeliveryDate).toLocaleDateString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                  : 'Select delivery date (optional)'}
+              </Text>
+              <Icon name="calendar" size={20} color={colors.textSecondary} />
+            </TouchableOpacity>
+            {errors.preferredDeliveryDate && (
+              <Text style={styles.errorText}>{errors.preferredDeliveryDate}</Text>
+            )}
+          </View>
+          
+          {showDatePicker && (
+            <DateTimePicker
+              value={formData.preferredDeliveryDate ? new Date(formData.preferredDeliveryDate) : new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={new Date()}
+              onChange={(event, selectedDate) => {
+                if (Platform.OS === 'android') {
+                  setShowDatePicker(false);
+                }
+                if (event.type === 'set' && selectedDate) {
+                  // Format as YYYY-MM-DD
+                  const year = selectedDate.getFullYear();
+                  const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+                  const day = String(selectedDate.getDate()).padStart(2, '0');
+                  handleInputChange('preferredDeliveryDate', `${year}-${month}-${day}`);
+                } else if (event.type === 'dismissed') {
+                  setShowDatePicker(false);
+                }
+              }}
+            />
+          )}
+          {Platform.OS === 'ios' && showDatePicker && (
+            <View style={styles.datePickerActions}>
+              <TouchableOpacity
+                style={styles.datePickerCancelButton}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.datePickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.datePickerDoneButton}
+                onPress={() => setShowDatePicker(false)}
+              >
+                <Text style={styles.datePickerDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Place Order Button */}
@@ -399,6 +475,11 @@ const styles = StyleSheet.create({
   required: {
     color: '#EF4444',
   },
+  optional: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: 'normal',
+  },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
@@ -421,6 +502,45 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#EF4444',
     marginTop: spacing.xs,
+  },
+  datePickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  datePickerText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  datePickerPlaceholder: {
+    color: colors.textSecondary,
+  },
+  datePickerActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  datePickerCancelButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  datePickerCancelText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  datePickerDoneButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#723FED',
   },
   placeOrderButton: {
     marginTop: spacing.lg,

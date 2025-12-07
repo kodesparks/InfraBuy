@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, Alert, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
@@ -152,7 +153,17 @@ const ProductListing = ({ navigation, route }) => {
       const productSubCategory = (product.subCategory || '').trim();
       const selectedSub = selectedSubCategory.trim();
       
-      // Case-insensitive comparison
+      // Special handling for "Others" - show products that are not OPC or PPC
+      if (selectedSub === 'Others') {
+        const subCatLower = productSubCategory.toLowerCase();
+        if (subCatLower === 'opc' || subCatLower === 'ppc') {
+          return false;
+        }
+        // Show products that have a subcategory but it's not OPC or PPC
+        return productSubCategory.length > 0;
+      }
+      
+      // Case-insensitive comparison for OPC, PPC, etc.
       if (productSubCategory.toLowerCase() !== selectedSub.toLowerCase()) {
         return false;
       }
@@ -357,25 +368,33 @@ const ProductListing = ({ navigation, route }) => {
               onPress={async (e) => {
                 e.stopPropagation();
                 if (!userPincode) {
-                  Alert.alert('Pincode Required', 'Please set your delivery pincode to add items to cart.');
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Pincode Required',
+                    text2: 'Please set your delivery pincode to add items to cart.',
+                  });
                   return;
                 }
                 
-                // Add to cart - show modal on success, alert only on error
+                // Add to cart - show modal on success, toast only on error
                 try {
                   const result = await addToCart(product, 1);
                   console.log('Add to cart result:', result);
                   
                   // Always show modal if success is true OR if there's no error (treat as success)
-                  // Only show alert if there's an explicit error
+                  // Only show toast if there's an explicit error
                   if (result.success === true || (!result.error && result.message)) {
-                    // Set product data and show modal (NO ALERT)
+                    // Set product data and show modal (NO TOAST)
                     setAddedProduct(product);
                     setShowAddToCartModal(true);
                     console.log('Showing add to cart modal');
                   } else if (result.error) {
-                    // Only show alert for actual errors
-                    Alert.alert('Error', result.error || 'Failed to add product to cart');
+                    // Only show toast for actual errors
+                    Toast.show({
+                      type: 'error',
+                      text1: 'Error',
+                      text2: result.error || 'Failed to add product to cart',
+                    });
                   } else {
                     // Default: treat as success and show modal
                     setAddedProduct(product);
@@ -384,7 +403,11 @@ const ProductListing = ({ navigation, route }) => {
                   }
                 } catch (error) {
                   console.error('Error in add to cart:', error);
-                  Alert.alert('Error', 'Failed to add product to cart. Please try again.');
+                  Toast.show({
+                    type: 'error',
+                    text1: 'Error',
+                    text2: 'Failed to add product to cart. Please try again.',
+                  });
                 }
               }}
             >
@@ -441,8 +464,17 @@ const ProductListing = ({ navigation, route }) => {
     );
   };
 
-  // Get unique subcategories from products for filter
-  const subCategories = ['All', ...new Set(products.map(p => p.subCategory).filter(Boolean))];
+  // Get subcategories for filter - simplified for Cement: only OPC, PPC, Others
+  const getSubCategories = () => {
+    if (category.name === 'Cement' || category.name === 'Cement') {
+      // For Cement, only show OPC, PPC, and Others
+      const cementSubCategories = ['All', 'OPC', 'PPC', 'Others'];
+      return cementSubCategories;
+    }
+    // For other categories, show all unique subcategories
+    return ['All', ...new Set(products.map(p => p.subCategory).filter(Boolean))];
+  };
+  const subCategories = getSubCategories();
 
   const renderLoadingState = () => (
     <View style={styles.loadingContainer}>

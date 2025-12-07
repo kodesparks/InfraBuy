@@ -93,10 +93,25 @@ export const orderService = {
       const url = buildUrl(API_ENDPOINTS.orders.getTracking.url, { leadId });
       const response = await apiClient.get(url);
       
+      console.log('📡 Raw tracking response:', {
+        status: response.status,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        hasTracking: !!response.data?.tracking,
+        trackingKeys: response.data?.tracking ? Object.keys(response.data.tracking) : [],
+      });
+      
       if (response.data?.success !== false && response.status === 200) {
+        const trackingData = response.data?.tracking || response.data?.data || response.data;
+        console.log('✅ Extracted tracking data:', {
+          hasDelivery: !!trackingData?.delivery,
+          deliveryKeys: trackingData?.delivery ? Object.keys(trackingData.delivery) : [],
+          driverName: trackingData?.delivery?.driverName,
+        });
+        
         return {
           success: true,
-          data: response.data?.tracking || response.data?.data || response.data,
+          data: trackingData,
           message: response.data?.message || 'Tracking information retrieved successfully',
         };
       }
@@ -107,7 +122,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error fetching tracking:', error);
+      console.error('❌ Error fetching tracking:', error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load tracking information. Please try again.',

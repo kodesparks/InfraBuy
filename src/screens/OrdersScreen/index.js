@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Modal, TextInput, ActivityIndicator, RefreshControl, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Modal, TextInput, ActivityIndicator, RefreshControl, Image, Linking } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
+import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { orderService } from '../../services/api/orderService';
 import { getStatusConfig, isTrackableStatus, shouldShowPayNow } from '../../utils/orderStatus';
@@ -23,6 +24,8 @@ const OrdersScreen = ({ navigation }) => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
   const [changeEligibility, setChangeEligibility] = useState(null);
+  const [trackingData, setTrackingData] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
 
   // Fetch orders from API
   const fetchOrders = async (status = null) => {
@@ -104,6 +107,43 @@ const OrdersScreen = ({ navigation }) => {
   const handleTrackOrder = async (order) => {
     setSelectedOrder(order);
     setShowTrackingModal(true);
+    setTrackingData(null);
+    setTrackingLoading(true);
+    
+    try {
+      const leadId = order.leadId || order.id;
+      console.log('🔍 Fetching tracking for order:', leadId);
+      const result = await orderService.getOrderTracking(leadId);
+      
+      console.log('📦 Tracking result:', JSON.stringify(result, null, 2));
+      
+      if (result.success && result.data) {
+        console.log('✅ Tracking data received:', {
+          hasDelivery: !!result.data.delivery,
+          delivery: result.data.delivery,
+          hasPayment: !!result.data.payment,
+          hasVendor: !!result.data.vendor,
+          hasTimeline: !!result.data.statusTimeline,
+        });
+        setTrackingData(result.data);
+      } else {
+        console.error('❌ Tracking fetch failed:', result.error);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: result.error || 'Failed to load tracking information',
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error fetching tracking:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Unable to load tracking information. Please try again.',
+      });
+    } finally {
+      setTrackingLoading(false);
+    }
   };
 
   const handlePayment = (order) => {
@@ -261,7 +301,11 @@ const OrdersScreen = ({ navigation }) => {
           {order.status === 'delivered' && (
             <TouchableOpacity
               style={styles.rateButton}
-              onPress={() => Alert.alert('Rate Order', 'Rating feature coming soon')}
+              onPress={() => Toast.show({
+                type: 'info',
+                text1: 'Rate Order',
+                text2: 'Rating feature coming soon',
+              })}
             >
               <Icon name="star" size={16} color="#723FED" />
               <Text style={styles.rateButtonText}>Rate</Text>
@@ -270,7 +314,11 @@ const OrdersScreen = ({ navigation }) => {
           
           <TouchableOpacity
             style={styles.invoiceButton}
-            onPress={() => Alert.alert('Invoice', `Invoice: ${order.invoiceNumber || 'N/A'}`)}
+            onPress={() => Toast.show({
+              type: 'info',
+              text1: 'Invoice',
+              text2: `Invoice: ${order.invoiceNumber || 'N/A'}`,
+            })}
           >
             <Icon name="file-text" size={16} color="#723FED" />
             <Text style={styles.invoiceButtonText}>Invoice</Text>
@@ -510,31 +558,327 @@ const OrdersScreen = ({ navigation }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentLarge}>
             <View style={styles.modalHeader}>
-              <View>
-                <Text style={styles.trackingStatusLabel}>CURRENT STATUS</Text>
-                {selectedOrder && (
-                  <View style={[styles.statusBadge, { backgroundColor: getStatusConfig(selectedOrder.status).color }]}>
-                    <Text style={styles.statusText}>{getStatusConfig(selectedOrder.status).label}</Text>
+              <View style={{ flex: 1, marginRight: spacing.sm }}>
+                <Text style={styles.trackingStatusLabel}>ORDER TRACKING</Text>
+                {trackingData?.currentStatus && (
+                  <View style={[styles.statusBadge, { backgroundColor: getStatusConfig(trackingData.currentStatus.status).color, marginTop: spacing.xs }]}>
+                    <Text style={styles.statusText}>{trackingData.currentStatus.statusLabel}</Text>
                   </View>
                 )}
-                {selectedOrder && (
+                {trackingData?.currentStatus?.statusDescription && (
                   <Text style={styles.trackingDescription}>
-                    {getStatusConfig(selectedOrder.status).description}
+                    {trackingData.currentStatus.statusDescription}
                   </Text>
                 )}
               </View>
-              <TouchableOpacity onPress={() => setShowTrackingModal(false)}>
-                <Icon name="x" size={24} color={colors.text} />
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
+                <TouchableOpacity 
+                  onPress={async () => {
+                    if (selectedOrder) {
+                      setTrackingLoading(true);
+                      try {
+                        const leadId = selectedOrder.leadId || selectedOrder.id;
+                        const result = await orderService.getOrderTracking(leadId);
+                        if (result.success && result.data) {
+                          setTrackingData(result.data);
+                        }
+                      } catch (error) {
+                        console.error('Error refreshing tracking:', error);
+                      } finally {
+                        setTrackingLoading(false);
+                      }
+                    }
+                  }}
+                  style={styles.refreshButton}
+                >
+                  <Icon name="refresh-cw" size={20} color={colors.text} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setShowTrackingModal(false)}>
+                  <Icon name="x" size={24} color={colors.text} />
+                </TouchableOpacity>
+              </View>
             </View>
 
-            {selectedOrder && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.trackingContent}>
-                  <OrderTimeline currentStatus={selectedOrder.status} />
+            <View style={styles.trackingBodyContainer}>
+              {trackingLoading ? (
+                <View style={styles.trackingLoadingContainer}>
+                  <ActivityIndicator size="large" color="#723FED" />
+                  <Text style={styles.loadingText}>Loading tracking information...</Text>
                 </View>
-              </ScrollView>
-            )}
+              ) : trackingData ? (
+                <ScrollView 
+                  showsVerticalScrollIndicator={true} 
+                  style={styles.trackingScrollView}
+                  contentContainerStyle={styles.trackingScrollContent}
+                  nestedScrollEnabled={true}
+                >
+                  <View style={styles.trackingContent}>
+                  {/* Debug: Log tracking data */}
+                  {console.log('🎨 Rendering tracking modal with data:', {
+                    hasDelivery: !!trackingData.delivery,
+                    deliveryKeys: trackingData.delivery ? Object.keys(trackingData.delivery) : [],
+                    driverName: trackingData.delivery?.driverName,
+                    fullDelivery: trackingData.delivery,
+                    trackingDataKeys: Object.keys(trackingData),
+                  })}
+                  
+                  {/* Delivery Information - Always show if delivery exists */}
+                  {trackingData.delivery ? (
+                    <View style={styles.trackingSection}>
+                      <View style={styles.sectionHeader}>
+                        <Icon name="truck" size={20} color="#3B82F6" />
+                        <Text style={styles.sectionTitle}>Delivery Information</Text>
+                      </View>
+                      <View style={styles.infoCard}>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Status:</Text>
+                          <Text style={[styles.infoValue, { textTransform: 'capitalize' }]}>
+                            {trackingData.delivery.deliveryStatus?.replace('_', ' ') || 'N/A'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Driver Name:</Text>
+                          <Text style={[styles.infoValue, !trackingData.delivery.driverName && styles.infoValueNA]}>
+                            {trackingData.delivery.driverName || 'Not Assigned'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Driver Phone:</Text>
+                          {trackingData.delivery.driverPhone ? (
+                            <TouchableOpacity onPress={() => {
+                              Linking.openURL(`tel:${trackingData.delivery.driverPhone}`).catch(err => {
+                                console.error('Error opening phone:', err);
+                                Toast.show({
+                                  type: 'error',
+                                  text1: 'Error',
+                                  text2: 'Unable to make phone call',
+                                });
+                              });
+                            }}>
+                              <Text style={[styles.infoValue, { color: '#3B82F6', textDecorationLine: 'underline' }]}>
+                                {trackingData.delivery.driverPhone}
+                              </Text>
+                            </TouchableOpacity>
+                          ) : (
+                            <Text style={[styles.infoValue, styles.infoValueNA]}>Not Available</Text>
+                          )}
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Truck Number:</Text>
+                          <Text style={[styles.infoValue, !trackingData.delivery.truckNumber && styles.infoValueNA]}>
+                            {trackingData.delivery.truckNumber || 'Not Assigned'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Vehicle Type:</Text>
+                          <Text style={[styles.infoValue, !trackingData.delivery.vehicleType && styles.infoValueNA]}>
+                            {trackingData.delivery.vehicleType || 'Not Assigned'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Estimated Arrival:</Text>
+                          <Text style={[styles.infoValue, !trackingData.delivery.estimatedArrival && styles.infoValueNA]}>
+                            {trackingData.delivery.estimatedArrival 
+                              ? new Date(trackingData.delivery.estimatedArrival).toLocaleString('en-IN', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: 'numeric',
+                                  minute: 'numeric',
+                                })
+                              : 'Not Available'}
+                          </Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Delivery To:</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.infoValue}>
+                              {trackingData.delivery.address || 'N/A'}
+                            </Text>
+                            {trackingData.delivery.pincode && (
+                              <Text style={styles.infoValue}> ({trackingData.delivery.pincode})</Text>
+                            )}
+                          </View>
+                        </View>
+                        {trackingData.delivery.deliveryNotes && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Notes:</Text>
+                            <Text style={styles.infoValue}>{trackingData.delivery.deliveryNotes}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.trackingSection}>
+                      <View style={styles.sectionHeader}>
+                        <Icon name="truck" size={20} color="#3B82F6" />
+                        <Text style={styles.sectionTitle}>Delivery Information</Text>
+                      </View>
+                      <View style={styles.infoCard}>
+                        <Text style={styles.infoValueNA}>Delivery information not available yet</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Payment Information */}
+                  {trackingData.payment && (
+                    <View style={styles.trackingSection}>
+                      <View style={styles.sectionHeader}>
+                        <Icon name="credit-card" size={20} color="#10B981" />
+                        <Text style={styles.sectionTitle}>Payment Information</Text>
+                      </View>
+                      <View style={styles.infoCard}>
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>Payment Status:</Text>
+                          <Text style={[styles.infoValue, { 
+                            color: trackingData.payment.paymentStatus === 'successful' ? '#10B981' : '#EF4444',
+                            fontWeight: '600',
+                            textTransform: 'capitalize'
+                          }]}>
+                            {trackingData.payment.paymentStatus || 'Pending'}
+                          </Text>
+                        </View>
+                        {trackingData.payment.paidAmount && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Paid Amount:</Text>
+                            <Text style={[styles.infoValue, { fontWeight: '600' }]}>
+                              ₹{trackingData.payment.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Text>
+                          </View>
+                        )}
+                        {trackingData.payment.paymentMethod && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Payment Method:</Text>
+                            <Text style={[styles.infoValue, { textTransform: 'capitalize' }]}>
+                              {trackingData.payment.paymentMethod.replace('_', ' ')}
+                            </Text>
+                          </View>
+                        )}
+                        {trackingData.payment.transactionId && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Transaction ID:</Text>
+                            <Text style={styles.infoValue}>{trackingData.payment.transactionId}</Text>
+                          </View>
+                        )}
+                        {trackingData.payment.paymentDate && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Payment Date:</Text>
+                            <Text style={styles.infoValue}>
+                              {new Date(trackingData.payment.paymentDate).toLocaleString('en-IN', {
+                                day: 'numeric',
+                                month: 'short',
+                                year: 'numeric',
+                              })}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Vendor Information */}
+                  {trackingData.vendor && (
+                    <View style={styles.trackingSection}>
+                      <View style={styles.sectionHeader}>
+                        <Icon name="user" size={20} color="#8B5CF6" />
+                        <Text style={styles.sectionTitle}>Vendor Information</Text>
+                      </View>
+                      <View style={styles.infoCard}>
+                        {trackingData.vendor.name && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Vendor Name:</Text>
+                            <Text style={styles.infoValue}>{trackingData.vendor.name}</Text>
+                          </View>
+                        )}
+                        {trackingData.vendor.companyName && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Company Name:</Text>
+                            <Text style={styles.infoValue}>{trackingData.vendor.companyName}</Text>
+                          </View>
+                        )}
+                        {trackingData.vendor.phone && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Phone:</Text>
+                            <TouchableOpacity onPress={() => {
+                              Linking.openURL(`tel:${trackingData.vendor.phone}`).catch(err => {
+                                console.error('Error opening phone:', err);
+                                Toast.show({
+                                  type: 'error',
+                                  text1: 'Error',
+                                  text2: 'Unable to make phone call',
+                                });
+                              });
+                            }}>
+                              <Text style={[styles.infoValue, { color: '#3B82F6', textDecorationLine: 'underline' }]}>
+                                {trackingData.vendor.phone}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                        {trackingData.vendor.email && (
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>Email:</Text>
+                            <Text style={styles.infoValue}>{trackingData.vendor.email}</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Status Timeline */}
+                  {trackingData.statusTimeline && trackingData.statusTimeline.length > 0 && (
+                    <View style={styles.trackingSection}>
+                      <View style={styles.sectionHeader}>
+                        <Icon name="clock" size={20} color="#F59E0B" />
+                        <Text style={styles.sectionTitle}>Status Timeline</Text>
+                      </View>
+                      <View style={styles.timelineContainer}>
+                        {trackingData.statusTimeline.map((timelineItem, index) => {
+                          const isFirst = index === 0;
+                          const isLast = index === trackingData.statusTimeline.length - 1;
+                          const statusConfig = getStatusConfig(timelineItem.status);
+                          
+                          return (
+                            <View key={index} style={styles.timelineItem}>
+                              <View style={styles.timelineLeft}>
+                                <View style={[styles.timelineDot, { backgroundColor: isFirst ? statusConfig.color : '#9CA3AF' }]}>
+                                  {isFirst && <Icon name="check" size={12} color="#FFFFFF" />}
+                                </View>
+                                {!isLast && <View style={styles.timelineLine} />}
+                              </View>
+                              <View style={styles.timelineContent}>
+                                <View style={styles.timelineCard}>
+                                  <View style={styles.timelineHeader}>
+                                    <Text style={styles.timelineLabel}>{timelineItem.statusLabel}</Text>
+                                    <Text style={styles.timelineDate}>
+                                      {new Date(timelineItem.date).toLocaleString('en-IN', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: 'numeric',
+                                      })}
+                                    </Text>
+                                  </View>
+                                  {timelineItem.remarks && (
+                                    <Text style={styles.timelineRemarks}>{timelineItem.remarks}</Text>
+                                  )}
+                                </View>
+                              </View>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                  </View>
+                </ScrollView>
+              ) : (
+                <View style={styles.trackingLoadingContainer}>
+                  <Text style={styles.loadingText}>No tracking information available</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </Modal>
@@ -602,7 +946,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
   },
   filterContainer: {
     backgroundColor: colors.white,
@@ -619,25 +963,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF', // Explicit white background
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: '#E5E7EB', // Explicit light gray border
     marginRight: spacing.sm,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   filterChipActive: {
-    backgroundColor: '#723FED',
-    borderColor: '#723FED',
+    backgroundColor: '#723FED', // Explicit purple background
+    borderColor: '#723FED', // Explicit purple border
   },
   filterChipText: {
     fontSize: 13,
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color for visibility
     fontWeight: '500',
   },
   filterChipTextActive: {
-    color: colors.white,
+    color: '#FFFFFF', // Explicit white text for active state
     fontWeight: '600',
   },
   content: {
@@ -686,7 +1030,7 @@ const styles = StyleSheet.create({
   orderId: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
   },
   orderDate: {
     fontSize: 12,
@@ -706,12 +1050,12 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
-    color: colors.white,
+    color: '#FFFFFF', // Explicit white text for status badges
   },
   statusTextSmall: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.white,
+    color: '#FFFFFF', // Explicit white text for status badges
   },
   paymentAlert: {
     flexDirection: 'row',
@@ -735,7 +1079,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   payNowButtonSmallText: {
-    color: colors.white,
+    color: '#FFFFFF', // Explicit white text for visibility
     fontSize: 12,
     fontWeight: '600',
   },
@@ -745,7 +1089,7 @@ const styles = StyleSheet.create({
   itemsSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
     marginBottom: spacing.xs,
   },
   itemRow: {
@@ -765,7 +1109,7 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
     marginBottom: 2,
   },
   itemDetails: {
@@ -793,12 +1137,12 @@ const styles = StyleSheet.create({
   summaryLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
   },
   summaryValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
+    color: '#1F2937', // Explicit dark text color
   },
   summarySubtext: {
     fontSize: 12,
@@ -812,14 +1156,15 @@ const styles = StyleSheet.create({
   viewButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
+    backgroundColor: 'transparent',
   },
   viewButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#723FED',
+    color: '#723FED', // Explicit purple color for visibility
   },
   trackButton: {
-    backgroundColor: '#10B981',
+    backgroundColor: '#10B981', // Explicit green background
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
@@ -828,14 +1173,14 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   trackButtonText: {
-    color: colors.white,
+    color: '#FFFFFF', // Explicit white text for contrast
     fontSize: 14,
     fontWeight: '600',
   },
   rateButton: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF', // Explicit white background
     borderWidth: 1,
-    borderColor: '#723FED',
+    borderColor: '#723FED', // Explicit purple border
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
@@ -844,14 +1189,14 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   rateButtonText: {
-    color: '#723FED',
+    color: '#723FED', // Explicit purple text for visibility
     fontSize: 14,
     fontWeight: '600',
   },
   invoiceButton: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF', // Explicit white background
     borderWidth: 1,
-    borderColor: '#723FED',
+    borderColor: '#723FED', // Explicit purple border
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
@@ -860,7 +1205,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   invoiceButtonText: {
-    color: '#723FED',
+    color: '#723FED', // Explicit purple text for visibility
     fontSize: 14,
     fontWeight: '600',
   },
@@ -899,7 +1244,10 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     padding: spacing.lg,
     width: '90%',
-    maxHeight: '85%',
+    maxHeight: '92%',
+    minHeight: '80%',
+    flexDirection: 'column',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1087,6 +1435,124 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#723FED',
+  },
+  // trackingBodyContainer
+  // },
+  // trackingScrollView: {
+  // },
+  trackingScrollContent: {
+    paddingBottom: spacing.xl,
+    flexGrow: 1,
+  },
+  trackingLoadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 200,
+    paddingVertical: spacing.xl,
+  },
+  trackingSection: {
+    marginBottom: spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  infoCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: spacing.xs,
+  },
+  infoLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textSecondary,
+    minWidth: 120,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
+  },
+  infoValueNA: {
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  timelineContainer: {
+    paddingLeft: spacing.xs,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+  },
+  timelineLeft: {
+    alignItems: 'center',
+    marginRight: spacing.md,
+    width: 30,
+  },
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 30,
+    backgroundColor: '#E5E7EB',
+    marginTop: spacing.xs,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingBottom: spacing.sm,
+  },
+  timelineCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+  },
+  timelineHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xs,
+  },
+  timelineLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.text,
+    flex: 1,
+  },
+  timelineDate: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
+  },
+  timelineRemarks: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
+    marginTop: spacing.xs,
+  },
+  refreshButton: {
+    padding: spacing.xs,
   },
 });
 
