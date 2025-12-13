@@ -213,7 +213,7 @@ const ProductListing = ({ navigation, route }) => {
             />
           ) : (
             <View style={styles.placeholderImage}>
-              <Icon name="image" size={40} color="#9CA3AF" />
+              <Icon name="image" size={30} color="#9CA3AF" />
             </View>
           )}
           
@@ -223,211 +223,104 @@ const ProductListing = ({ navigation, route }) => {
               <Text style={styles.discountBadgeText}>{discount}% OFF</Text>
             </View>
           )}
-          
-          {/* Favorite/Wishlist Icon */}
-          <TouchableOpacity
-            style={styles.favoriteButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              toggleFavorite(product.id || product._id);
-            }}
-          >
-            <Icon 
-              name={favorites.has(product.id || product._id) ? "heart" : "heart"} 
-              size={12} 
-              color={favorites.has(product.id || product._id) ? "#DC2626" : "#374151"} 
-            />
-          </TouchableOpacity>
         </View>
 
         {/* Content Section */}
         <View style={styles.productInfo}>
-          {/* Brand Badge */}
-          {product.brand && (
-            <View style={styles.brandBadgeContainer}>
-              <View style={styles.brandBadge}>
-                <Text style={styles.brandBadgeText}>{product.brand}</Text>
-              </View>
-            </View>
-          )}
-
           {/* Product Name */}
           <Text style={styles.productName} numberOfLines={2}>
             {product.name || product.itemDescription}
           </Text>
 
-          {/* Item Code and Subcategory Row */}
-          <View style={styles.itemCodeRow}>
-            {product.formattedItemCode && (
-              <Text style={styles.itemCode}>{product.formattedItemCode}</Text>
-            )}
-            {product.subCategory && (
-              <View style={styles.subCategoryBadge}>
-                <Text style={styles.subCategoryBadgeText}>{product.subCategory}</Text>
+          {/* Pricing Section - Simplified */}
+          <View style={styles.pricingSection}>
+            {userPincode ? (
+              // With Pincode - Show total price
+              <View style={styles.priceContainer}>
+                {hasDiscount && (
+                  <Text style={styles.originalPrice}>
+                    ₹{product.basePrice.toLocaleString()}
+                  </Text>
+                )}
+                <Text style={styles.totalPrice}>
+                  ₹{product.totalPrice.toLocaleString()}/{product.units}
+                </Text>
+              </View>
+            ) : (
+              // Without Pincode - Show current price
+              <View style={styles.priceContainer}>
+                {hasDiscount && (
+                  <Text style={styles.originalPrice}>
+                    ₹{product.basePrice.toLocaleString()}
+                  </Text>
+                )}
+                <Text style={styles.currentPrice}>
+                  ₹{product.currentPrice.toLocaleString()}/{product.units}
+                </Text>
               </View>
             )}
           </View>
 
-          {/* Features */}
-          {product.features && product.features.length > 0 && (
-            <View style={styles.featuresContainer}>
-              {product.features.slice(0, 2).map((feature, index) => (
-                <View key={index} style={styles.featureItem}>
-                  <Icon name="check" size={10} color="#10B981" />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Pricing Section */}
-          <View style={styles.pricingSection}>
-            {userPincode ? (
-              // With Pincode - Show detailed pricing
-              <>
-                <View style={styles.priceRow}>
-                  <Text style={styles.priceLabel}>Base Price:</Text>
-                  <View style={styles.priceValueContainer}>
-                    {hasDiscount && (
-                      <Text style={styles.originalPrice}>
-                        ₹{product.basePrice.toLocaleString()}
-                      </Text>
-                    )}
-                    <Text style={styles.discountedPrice}>
-                      ₹{product.currentPrice.toLocaleString()}/{product.units}
-                    </Text>
-                  </View>
-                </View>
+          {/* Action Button */}
+          <TouchableOpacity
+            style={[
+              styles.addToCartButton,
+              !product.isDeliveryAvailable && styles.addToCartButtonDisabled
+            ]}
+            disabled={!product.isDeliveryAvailable}
+            onPress={async (e) => {
+              e.stopPropagation();
+              if (!userPincode) {
+                Toast.show({
+                  type: 'error',
+                  text1: 'Pincode Required',
+                  text2: 'Please set your delivery pincode to add items to cart.',
+                });
+                return;
+              }
+              
+              // Add to cart - show modal on success, toast only on error
+              try {
+                const result = await addToCart(product, 1);
+                console.log('Add to cart result:', result);
                 
-                <View style={styles.deliveryRow}>
-                  <Text style={styles.priceLabel}>Delivery:</Text>
-                  {!product.isDeliveryAvailable ? (
-                    <Text style={styles.deliveryNotAvailable}>Not Available</Text>
-                  ) : product.isFreeDelivery ? (
-                    <Text style={styles.deliveryFree}>FREE</Text>
-                  ) : (
-                    <Text style={styles.deliveryCharge}>
-                      ₹{product.deliveryCharge.toLocaleString()}
-                    </Text>
-                  )}
-                </View>
-
-                <View style={styles.totalPriceRow}>
-                  <Text style={styles.totalPriceLabel}>Total:</Text>
-                  <Text style={styles.totalPriceValue}>
-                    ₹{product.totalPrice.toLocaleString()}/{product.units}
-                  </Text>
-                </View>
-
-                {product.distance > 0 && (
-                  <View style={styles.distanceInfo}>
-                    <Text style={styles.distanceText}>
-                      📍 {product.distance}km from {product.warehouseName}
-                    </Text>
-                    {!product.isDeliveryAvailable && product.deliveryReason && (
-                      <Text style={styles.deliveryReason}>{product.deliveryReason}</Text>
-                    )}
-                  </View>
-                )}
-              </>
-            ) : (
-              // Without Pincode - Show simple pricing
-              <>
-                <View style={styles.priceRow}>
-                  {hasDiscount ? (
-                    <>
-                      <Text style={styles.originalPrice}>
-                        ₹{product.basePrice.toLocaleString()}
-                      </Text>
-                      <Text style={styles.discountedPrice}>
-                        ₹{product.currentPrice.toLocaleString()}/{product.units}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text style={styles.currentPrice}>
-                      ₹{product.currentPrice.toLocaleString()}/{product.units}
-                    </Text>
-                  )}
-                </View>
-                {hasDiscount && (
-                  <Text style={styles.discountText}>{discount}% OFF</Text>
-                )}
-                <Text style={styles.deliveryNote}>+ Delivery charges</Text>
-              </>
-            )}
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[
-                styles.addToCartButton,
-                !product.isDeliveryAvailable && styles.addToCartButtonDisabled
-              ]}
-              disabled={!product.isDeliveryAvailable}
-              onPress={async (e) => {
-                e.stopPropagation();
-                if (!userPincode) {
-                  Toast.show({
-                    type: 'error',
-                    text1: 'Pincode Required',
-                    text2: 'Please set your delivery pincode to add items to cart.',
-                  });
-                  return;
-                }
-                
-                // Add to cart - show modal on success, toast only on error
-                try {
-                  const result = await addToCart(product, 1);
-                  console.log('Add to cart result:', result);
-                  
-                  // Always show modal if success is true OR if there's no error (treat as success)
-                  // Only show toast if there's an explicit error
-                  if (result.success === true || (!result.error && result.message)) {
-                    // Set product data and show modal (NO TOAST)
-                    setAddedProduct(product);
-                    setShowAddToCartModal(true);
-                    console.log('Showing add to cart modal');
-                  } else if (result.error) {
-                    // Only show toast for actual errors
-                    Toast.show({
-                      type: 'error',
-                      text1: 'Error',
-                      text2: result.error || 'Failed to add product to cart',
-                    });
-                  } else {
-                    // Default: treat as success and show modal
-                    setAddedProduct(product);
-                    setShowAddToCartModal(true);
-                    console.log('Showing add to cart modal (default success)');
-                  }
-                } catch (error) {
-                  console.error('Error in add to cart:', error);
+                // Always show modal if success is true OR if there's no error (treat as success)
+                // Only show toast if there's an explicit error
+                if (result.success === true || (!result.error && result.message)) {
+                  // Set product data and show modal (NO TOAST)
+                  setAddedProduct(product);
+                  setShowAddToCartModal(true);
+                  console.log('Showing add to cart modal');
+                } else if (result.error) {
+                  // Only show toast for actual errors
                   Toast.show({
                     type: 'error',
                     text1: 'Error',
-                    text2: 'Failed to add product to cart. Please try again.',
+                    text2: result.error || 'Failed to add product to cart',
                   });
+                } else {
+                  // Default: treat as success and show modal
+                  setAddedProduct(product);
+                  setShowAddToCartModal(true);
+                  console.log('Showing add to cart modal (default success)');
                 }
-              }}
-            >
-              <Text style={[
-                styles.addToCartButtonText,
-                !product.isDeliveryAvailable && styles.addToCartButtonTextDisabled
-              ]}>
-                {product.isDeliveryAvailable ? 'Add to Cart' : 'Delivery Not Available'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.viewDetailsButton}
-              onPress={(e) => {
-                e.stopPropagation();
-                handleProductPress(product);
-              }}
-            >
-              <Icon name="eye" size={14} color="#1D4ED8" />
-            </TouchableOpacity>
-          </View>
+              } catch (error) {
+                console.error('Error in add to cart:', error);
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: 'Failed to add product to cart. Please try again.',
+                });
+              }
+            }}
+          >
+            <Text style={[
+              styles.addToCartButtonText,
+              !product.isDeliveryAvailable && styles.addToCartButtonTextDisabled
+            ]}>
+              {product.isDeliveryAvailable ? 'Add to Cart' : 'Not Available'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -583,7 +476,11 @@ const ProductListing = ({ navigation, route }) => {
           {!loading && !error && filteredProducts.length > 0 && (
             <View style={styles.productsContainer}>
               <View style={styles.productsGrid}>
-                {filteredProducts.map(renderProductCard)}
+                {filteredProducts.map((product, index) => (
+                  <View key={product.id || product._id || index} style={styles.productCardWrapper}>
+                    {renderProductCard(product)}
+                  </View>
+                ))}
               </View>
             </View>
           )}
@@ -740,10 +637,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  productsContainer: {
+    paddingBottom: 20,
+  },
   productsGrid: {
-    flexDirection: 'column',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     width: '100%',
-    alignItems: 'stretch',
+    justifyContent: 'space-between',
+  },
+  productCardWrapper: {
+    width: (screenWidth - spacing.md * 2 - spacing.sm) / 2, // 2 items per row with gap
+    marginBottom: spacing.md,
   },
   loadingContainer: {
     flex: 1,
@@ -810,26 +715,107 @@ const styles = StyleSheet.create({
   },
   placeholderImage: {
     width: '100%',
-    height: 128,
+    height: 140,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  discountText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#059669',
-    marginTop: 4,
+  productCard: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 2,
   },
-  deliveryNote: {
-    fontSize: 12,
-    color: '#6B7280',
-    marginTop: 4,
+  productImageContainer: {
+    position: 'relative',
+    width: '100%',
+    height: 140,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9999,
+    zIndex: 10,
+  },
+  discountBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  productInfo: {
+    padding: 10,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+    minHeight: 36, // Ensure consistent height for 2 lines
+  },
+  pricingSection: {
+    marginBottom: 10,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
+  originalPrice: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
   },
   currentPrice: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1F2937',
+  },
+  totalPrice: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#2563EB',
+  },
+  addToCartButton: {
+    width: '100%',
+    backgroundColor: '#1D4ED8',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addToCartButtonDisabled: {
+    backgroundColor: '#D1D5DB',
+  },
+  addToCartButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  addToCartButtonTextDisabled: {
+    color: '#6B7280',
   },
 });
 
