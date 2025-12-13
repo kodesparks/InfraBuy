@@ -312,7 +312,7 @@ const Cart = ({ navigation }) => {
                         onPress={() => updateQuantity(item.leadId, item.itemCode, item.quantity, -1)}
                         disabled={refreshing}
                       >
-                        <Icon name="minus" size={16} color={colors.text} />
+                        <Icon name="minus" size={18} color="#1F2937" />
                       </TouchableOpacity>
                       <TextInput
                         style={styles.quantityInput}
@@ -399,7 +399,7 @@ const Cart = ({ navigation }) => {
                         onPress={() => updateQuantity(item.leadId, item.itemCode, item.quantity, 1)}
                         disabled={refreshing}
                       >
-                        <Icon name="plus" size={16} color={colors.text} />
+                        <Icon name="plus" size={18} color="#1F2937" />
                       </TouchableOpacity>
                     </View>
 
