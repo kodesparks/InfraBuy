@@ -287,11 +287,6 @@ const Cart = ({ navigation }) => {
                       )}
                     </View>
 
-                    {/* Delivery Info */}
-                    {item.deliveryCharges > 0 && (
-                      <Text style={styles.deliveryCharge}>Delivery: ₹{item.deliveryCharges.toLocaleString()}</Text>
-                    )}
-
                     {/* Brand and Category */}
                     {item.brand && item.brand !== 'Unknown' && (
                       <Text style={styles.itemBrand}>{item.brand}</Text>
@@ -430,12 +425,6 @@ const Cart = ({ navigation }) => {
                 <Text style={styles.totalLabel}>Subtotal:</Text>
                 <Text style={styles.totalValue}>₹{calculateSubtotal().toLocaleString()}</Text>
               </View>
-              {calculateDeliveryCharges() > 0 && (
-                <View style={styles.totalRow}>
-                  <Text style={styles.totalLabel}>Delivery Charges:</Text>
-                  <Text style={styles.totalValue}>₹{calculateDeliveryCharges().toLocaleString()}</Text>
-                </View>
-              )}
               <View style={[styles.totalRow, styles.grandTotalRow]}>
                 <Text style={styles.grandTotalLabel}>Grand Total:</Text>
                 <Text style={styles.grandTotalAmount}>₹{total.toLocaleString()}</Text>

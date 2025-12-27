@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, FlatList, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Dimensions, FlatList, Alert, TextInput } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
@@ -34,6 +34,26 @@ const ProductDetail = ({ navigation, route }) => {
   const handleQuantityChange = (change) => {
     const newQuantity = Math.max(1, quantity + change);
     setQuantity(newQuantity);
+  };
+
+  const handleQuantityInputChange = (text) => {
+    // Only allow numbers
+    const numericValue = text.replace(/[^0-9]/g, '');
+    if (numericValue === '') {
+      setQuantity(1);
+      return;
+    }
+    const numValue = parseInt(numericValue, 10);
+    if (!isNaN(numValue) && numValue >= 1) {
+      setQuantity(numValue);
+    }
+  };
+
+  const handleQuantityBlur = () => {
+    // Ensure quantity is at least 1 when user finishes editing
+    if (quantity < 1) {
+      setQuantity(1);
+    }
   };
 
   const handleAddToCart = async () => {
@@ -276,32 +296,12 @@ const ProductDetail = ({ navigation, route }) => {
                 ₹{currentPrice.toLocaleString()}/{units}
               </Text>
             </View>
-            <View style={styles.deliveryInfoRow}>
-              <Text style={styles.deliveryInfoLabel}>Delivery:</Text>
-              {!productData.isDeliveryAvailable ? (
-                <Text style={styles.deliveryNotAvailableText}>Not Available</Text>
-              ) : deliveryCharge === 0 ? (
-                <Text style={styles.deliveryFreeText}>FREE</Text>
-              ) : (
-                <Text style={styles.deliveryInfoValue}>
-                  ₹{deliveryCharge.toLocaleString()}
-                </Text>
-              )}
-            </View>
             <View style={styles.totalPriceRow}>
               <Text style={styles.totalPriceLabel}>Total:</Text>
               <Text style={styles.totalPriceValue}>
                 ₹{totalPrice.toLocaleString()}/{units}
               </Text>
             </View>
-            {productData?.distance > 0 && (
-              <View style={styles.distanceRow}>
-                <Icon name="map-pin" size={14} color="#6B7280" />
-                <Text style={styles.distanceText}>
-                  {productData.distance}km from {productData.warehouseName || 'warehouse'}
-                </Text>
-              </View>
-            )}
           </View>
         )}
         
@@ -323,7 +323,15 @@ const ProductDetail = ({ navigation, route }) => {
                   <Icon name="minus" size={20} color={colors.white} />
                 </LinearGradient>
               </TouchableOpacity>
-              <Text style={styles.quantityValue}>{quantity}</Text>
+              <TextInput
+                style={styles.quantityInput}
+                value={quantity.toString()}
+                onChangeText={handleQuantityInputChange}
+                onBlur={handleQuantityBlur}
+                keyboardType="numeric"
+                textAlign="center"
+                selectTextOnFocus
+              />
               <TouchableOpacity 
                 style={styles.quantityButton}
                 onPress={() => handleQuantityChange(1)}
@@ -474,17 +482,6 @@ const ProductDetail = ({ navigation, route }) => {
           </View>
         )}
 
-        {productData.distance > 0 && (
-          <View style={styles.deliveryItem}>
-            <View style={styles.deliveryIconContainer}>
-              <Icon name="navigation" size={20} color="#10B981" />
-            </View>
-            <View style={styles.deliveryContent}>
-              <Text style={styles.deliveryTitle}>Distance</Text>
-              <Text style={styles.deliveryDescription}>{productData.distance} km from your location</Text>
-            </View>
-          </View>
-        )}
 
         {deliveryConfig.baseDeliveryCharge !== undefined && (
           <View style={styles.deliveryItem}>
@@ -903,6 +900,21 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.md,
     minWidth: 30,
     textAlign: 'center',
+  },
+  
+  quantityInput: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginHorizontal: spacing.md,
+    minWidth: 50,
+    textAlign: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
   
   totalSection: {

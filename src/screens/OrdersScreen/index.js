@@ -418,7 +418,7 @@ const OrdersScreen = ({ navigation }) => {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Order Details</Text>
               <TouchableOpacity onPress={() => setShowOrderDetailsModal(false)}>
-                <Icon name="x" size={24} color={colors.text} />
+                <Icon name="x" size={24} color={colors.textPrimary} />
               </TouchableOpacity>
             </View>
 
@@ -562,10 +562,10 @@ const OrdersScreen = ({ navigation }) => {
                   }}
                   style={styles.refreshButton}
                 >
-                  <Icon name="refresh-cw" size={20} color={colors.text} />
+                  <Icon name="refresh-cw" size={20} color={colors.textPrimary} />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => setShowTrackingModal(false)}>
-                  <Icon name="x" size={24} color={colors.text} />
+                  <Icon name="x" size={24} color={colors.textPrimary} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -1187,7 +1187,7 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginTop: spacing.md,
     marginBottom: spacing.sm,
   },
@@ -1229,7 +1229,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   paymentDetails: {
     alignItems: 'center',
@@ -1237,7 +1237,7 @@ const styles = StyleSheet.create({
   paymentOrderId: {
     fontSize: 16,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
   paymentAmount: {
@@ -1253,7 +1253,7 @@ const styles = StyleSheet.create({
   paymentMethodsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   paymentMethodOption: {
@@ -1272,7 +1272,7 @@ const styles = StyleSheet.create({
   },
   paymentMethodText: {
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   payNowButton: {
     width: '100%',
@@ -1303,7 +1303,7 @@ const styles = StyleSheet.create({
   detailSectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
   detailRow: {
@@ -1319,16 +1319,16 @@ const styles = StyleSheet.create({
   detailValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   detailValueBold: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   detailText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   detailItemRow: {
@@ -1351,7 +1351,7 @@ const styles = StyleSheet.create({
   detailItemName: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 2,
   },
   detailItemText: {
@@ -1364,7 +1364,7 @@ const styles = StyleSheet.create({
   trackingTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.md,
   },
   trackingStatusLabel: {
@@ -1434,7 +1434,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   infoCard: {
     backgroundColor: '#F9FAFB',
@@ -1455,7 +1455,7 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
     flex: 1,
   },
   infoValueNA: {
@@ -1508,7 +1508,7 @@ const styles = StyleSheet.create({
   timelineLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     flex: 1,
   },
   timelineDate: {

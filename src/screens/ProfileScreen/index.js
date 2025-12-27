@@ -368,6 +368,16 @@ const ProfileScreen = ({ navigation }) => {
                 <Text style={styles.infoValue}>{userData.pincode || 'N/A'}</Text>
               </View>
             </View>
+
+            <View style={styles.infoItem}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="file-text" size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Contract ID</Text>
+                <Text style={styles.infoValue}>{userData.contractId || 'N/A'}</Text>
+              </View>
+            </View>
           </View>
         </View>
 

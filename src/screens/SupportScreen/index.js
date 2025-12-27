@@ -27,7 +27,7 @@ const SupportScreen = ({ navigation }) => {
     },
     {
       id: 2,
-      text: 'We\'re here to assist you with:\n• Product inquiries\n• Order tracking\n• Delivery issues\n• Technical support\n• General questions',
+      text: 'We\'re here to assist you with:\n• Product inquiries\n• Order tracking\n• Delivery issues\n• Technical support\n• General questions\n\n📞 Customer Care: 9000390909',
       isUser: false,
       time: 'Just now',
       timestamp: new Date(),
@@ -60,7 +60,7 @@ const SupportScreen = ({ navigation }) => {
         'That\'s a great question! Let me check our system for the most up-to-date information.',
         'I appreciate you reaching out. Our team is committed to resolving your query quickly.',
         'I\'ve noted your request. You can expect a detailed response within 2-4 hours during business hours.',
-        'For immediate assistance, you can also reach us at:\n📞 +91-9876543210\n📧 support@infraxpert.com'
+        'For immediate assistance, you can also reach us at:\n📞 9000390909\n📧 support@infraxpert.com'
       ];
       
       const randomResponse = responses[Math.floor(Math.random() * responses.length)];

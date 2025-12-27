@@ -18,6 +18,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
   const [name, setName] = useState(user?.name || '');
   const [address, setAddress] = useState(user?.address || '');
   const [pincode, setPincode] = useState(user?.pincode || '');
+  const [contractId, setContractId] = useState(user?.contractId || '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -26,6 +27,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
       setName(user?.name || '');
       setAddress(user?.address || '');
       setPincode(user?.pincode || '');
+      setContractId(user?.contractId || '');
       setErrors({});
     }
   }, [visible, user]);
@@ -67,6 +69,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
         name: name.trim(),
         address: address.trim(),
         pincode: pincode.trim(),
+        contractId: contractId.trim(),
       };
 
       const result = await updateProfile(user.id, profileData);
@@ -175,6 +178,25 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
                 />
                 {errors.pincode && (
                   <Text style={styles.errorText}>{errors.pincode}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Contract ID</Text>
+                <TextInput
+                  style={[styles.input, errors.contractId && styles.inputError]}
+                  value={contractId}
+                  onChangeText={(text) => {
+                    setContractId(text);
+                    if (errors.contractId) {
+                      setErrors({ ...errors, contractId: null });
+                    }
+                  }}
+                  placeholder="Enter contract ID"
+                  placeholderTextColor={colors.textSecondary}
+                />
+                {errors.contractId && (
+                  <Text style={styles.errorText}>{errors.contractId}</Text>
                 )}
               </View>
             </View>

@@ -12,7 +12,7 @@ import { colors, spacing, borderRadius } from '../../assets/styles/global';
 const UpdatesScreen = ({ navigation }) => {
   const [activeFilter, setActiveFilter] = useState('All');
 
-  const filters = ['All', 'Orders', 'Offers'];
+  const filters = ['All', 'Orders', 'Offers', 'Trades'];
 
   const updates = [
     {
@@ -47,6 +47,28 @@ const UpdatesScreen = ({ navigation }) => {
       timestamp: '1 day ago',
       icon: 'package',
       iconBgColor: '#60A5FA',
+    },
+    {
+      id: 4,
+      type: 'Trades',
+      title: 'New Trade Opportunity',
+      description: 'A new trade request for ACC Cement has been received. Review and respond.',
+      action: 'View Trade',
+      actionColor: '#8B5CF6',
+      timestamp: '3 hours ago',
+      icon: 'briefcase',
+      iconBgColor: '#8B5CF6',
+    },
+    {
+      id: 5,
+      type: 'Trades',
+      title: 'Trade Completed',
+      description: 'Your trade for UltraTech Cement has been successfully completed.',
+      action: 'View Details',
+      actionColor: '#8B5CF6',
+      timestamp: '2 days ago',
+      icon: 'check-circle',
+      iconBgColor: '#10B981',
     },
   ];
 
@@ -125,6 +147,10 @@ const UpdatesScreen = ({ navigation }) => {
       navigation.navigate('OrdersScreen');
     } else if (update.type === 'Offers') {
       navigation.navigate('ProductListing', { category: 'Cement' });
+    } else if (update.type === 'Trades') {
+      // Navigate to trades screen or handle trade action
+      // You can update this navigation based on your trades screen route
+      navigation.navigate('MainApp');
     }
   };
 

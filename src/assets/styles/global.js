@@ -22,6 +22,7 @@ export const colors = {
   backgroundDark: '#F1F5F9',
   
   // Text colors
+  text: '#1F2937', // Primary text color (alias for textPrimary)
   textPrimary: '#1F2937',
   textSecondary: '#6B7280',
   textLight: '#9CA3AF',

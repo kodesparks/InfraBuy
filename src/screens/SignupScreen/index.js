@@ -25,7 +25,8 @@ const SignupScreen = ({ navigation }) => {
     password: '',
     address: '',
     pincode: '',
-    companyName: ''
+    companyName: '',
+    contractId: ''
   });
   
   const [isLoading, setIsLoading] = useState(false);
@@ -97,7 +98,8 @@ const SignupScreen = ({ navigation }) => {
         password: formData.password,
         address: formData.address.trim(),
         pincode: formData.pincode.trim(),
-        companyName: formData.companyName.trim()
+        companyName: formData.companyName.trim(),
+        contractId: formData.contractId.trim()
       };
 
       const result = await registerUser(userData);
@@ -252,6 +254,18 @@ const SignupScreen = ({ navigation }) => {
                 onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
                 keyboardType="numeric"
                 maxLength={6}
+                editable={!isLoading}
+              />
+            </View>
+
+            {/* Contract ID Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Contract ID"
+                placeholderTextColor="#9CA3AF"
+                value={formData.contractId}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, contractId: value }))}
                 editable={!isLoading}
               />
             </View>
