@@ -167,14 +167,19 @@ const Cart = ({ navigation }) => {
 
     setRefreshing(true);
     const result = await clearCartContext();
-    // Refresh cart to update badge immediately
+    // Refresh cart to update badge immediately (though clearCart already does this)
     await loadCartItems();
     setRefreshing(false);
     if (result.success) {
+      const clearedCount = result.clearedCount || cartItems.length;
+      const message = result.fallback 
+        ? `Cleared ${clearedCount} item${clearedCount !== 1 ? 's' : ''} individually`
+        : result.message || `Successfully removed ${clearedCount} item${clearedCount !== 1 ? 's' : ''} from your cart.`;
+      
       Toast.show({
         type: 'success',
         text1: 'Cart Cleared',
-        text2: result.message || 'All items have been removed from your cart.',
+        text2: message,
       });
     } else {
       Toast.show({

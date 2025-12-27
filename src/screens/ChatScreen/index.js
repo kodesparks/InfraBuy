@@ -9,7 +9,7 @@ const ChatScreen = ({ navigation }) => {
     {
       id: 1,
       type: 'received',
-      message: 'Hello! Welcome to InfraBuy customer support. How can I help you today?',
+      message: 'Hello! Welcome to infraXpert customer support. How can I help you today?',
       time: '10:30 AM'
     },
     {

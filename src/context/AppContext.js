@@ -258,12 +258,22 @@ export const AppProvider = ({ children }) => {
 
   const clearCart = async () => {
     try {
-      const result = await cartService.clearCart();
+      // Pass current cart items as fallback in case the clear endpoint returns 404
+      const result = await cartService.clearCart(cartItems);
 
       if (result.success) {
+        // Clear local state
         setCartItems([]);
         setCartCount(0);
-        return { success: true, message: result.message || 'Cart cleared successfully' };
+        // Refresh from API to ensure consistency
+        await fetchCartItems();
+        return { 
+          success: true, 
+          message: result.message || 'Cart cleared successfully',
+          clearedCount: result.clearedCount || 0,
+          ordersCleared: result.ordersCleared || [],
+          fallback: result.fallback || false,
+        };
       }
 
       return { success: false, error: result.error || 'Failed to clear cart' };

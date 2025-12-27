@@ -358,23 +358,46 @@ const ProductDetail = ({ navigation, route }) => {
     );
   };
 
-  const renderExpandableSection = (title, isExpanded, onToggle, children) => (
-    <View style={styles.expandableSection}>
-      <TouchableOpacity style={styles.sectionHeader} onPress={onToggle}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        <Icon 
-          name={isExpanded ? "chevron-up" : "chevron-down"} 
-          size={20} 
-          color={colors.textSecondary} 
-        />
-      </TouchableOpacity>
-      {isExpanded && (
-        <View style={styles.sectionContent}>
-          {children}
+  const renderExpandableSection = (title, isExpanded, onToggle, children) => {
+    // Safety check: ensure all required parameters are valid
+    if (!title || typeof onToggle !== 'function') {
+      console.warn('Invalid parameters for renderExpandableSection');
+      return null;
+    }
+
+    try {
+      return (
+        <View style={styles.expandableSection}>
+          <TouchableOpacity 
+            style={styles.sectionHeader} 
+            onPress={() => {
+              try {
+                onToggle();
+              } catch (error) {
+                console.error('Error in expandable section toggle:', error);
+              }
+            }}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.sectionTitle}>{title}</Text>
+            <Icon 
+              name={isExpanded ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color={colors.textSecondary} 
+            />
+          </TouchableOpacity>
+          {isExpanded && (
+            <View style={styles.sectionContent}>
+              {children}
+            </View>
+          )}
         </View>
-      )}
-    </View>
-  );
+      );
+    } catch (error) {
+      console.error('Error rendering expandable section:', error);
+      return null;
+    }
+  };
 
   const renderDetailsSection = () => {
     const details = [];
@@ -457,61 +480,92 @@ const ProductDetail = ({ navigation, route }) => {
   };
 
   const renderDeliverySection = () => {
+    // Safety check: return null if warehouse data is not available
     if (!productData?.warehouse) return null;
 
-    const warehouse = productData.warehouse;
-    const deliveryConfig = warehouse.deliveryConfig || {};
-    
-    return renderExpandableSection(
-      'Delivery Information',
-      deliveryExpanded,
-      () => setDeliveryExpanded(!deliveryExpanded),
-      <View style={styles.deliveryList}>
-        {warehouse.warehouseName && (
-          <View style={styles.deliveryItem}>
-            <View style={styles.deliveryIconContainer}>
-              <Icon name="map-pin" size={20} color="#3B82F6" />
-            </View>
-            <View style={styles.deliveryContent}>
-              <Text style={styles.deliveryTitle}>Warehouse</Text>
-              <Text style={styles.deliveryDescription}>{warehouse.warehouseName}</Text>
-              {warehouse.location?.address && (
-                <Text style={styles.deliveryDescription}>{warehouse.location.address}</Text>
-              )}
-            </View>
-          </View>
-        )}
-
-
-        {deliveryConfig.baseDeliveryCharge !== undefined && (
-          <View style={styles.deliveryItem}>
-            <View style={styles.deliveryIconContainer}>
-              <Icon name="truck" size={20} color="#F59E0B" />
-            </View>
-            <View style={styles.deliveryContent}>
-              <Text style={styles.deliveryTitle}>Delivery Charges</Text>
-              <Text style={styles.deliveryDescription}>
-                Base: ₹{deliveryConfig.baseDeliveryCharge?.toLocaleString() || '0'}
-                {deliveryConfig.perKmCharge && ` • ₹${deliveryConfig.perKmCharge}/km`}
-              </Text>
-              {deliveryConfig.freeDeliveryThreshold && (
+    try {
+      const warehouse = productData.warehouse || {};
+      const deliveryConfig = warehouse?.deliveryConfig || {};
+      
+      // Check if there's any delivery information to show
+      const hasWarehouseInfo = warehouse?.warehouseName;
+      const hasDeliveryConfig = deliveryConfig?.baseDeliveryCharge !== undefined || 
+                                deliveryConfig?.perKmCharge !== undefined ||
+                                deliveryConfig?.freeDeliveryThreshold !== undefined;
+      const hasDeliveryReason = !productData?.isDeliveryAvailable && productData?.deliveryReason;
+      
+      // Don't render section if there's no information to display
+      if (!hasWarehouseInfo && !hasDeliveryConfig && !hasDeliveryReason) {
+        return null;
+      }
+      
+      return renderExpandableSection(
+        'Delivery Information',
+        deliveryExpanded,
+        () => {
+          try {
+            setDeliveryExpanded(!deliveryExpanded);
+          } catch (error) {
+            console.error('Error toggling delivery section:', error);
+          }
+        },
+        <View style={styles.deliveryList}>
+          {hasWarehouseInfo && (
+            <View style={styles.deliveryItem}>
+              <View style={styles.deliveryIconContainer}>
+                <Icon name="map-pin" size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.deliveryContent}>
+                <Text style={styles.deliveryTitle}>Warehouse</Text>
                 <Text style={styles.deliveryDescription}>
-                  Free delivery for orders above ₹{deliveryConfig.freeDeliveryThreshold.toLocaleString()}
+                  {warehouse?.warehouseName || 'N/A'}
                 </Text>
-              )}
+                {warehouse?.location?.address && (
+                  <Text style={styles.deliveryDescription}>
+                    {warehouse.location.address}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {!productData.isDeliveryAvailable && productData.deliveryReason && (
-          <View style={styles.importantNote}>
-            <Text style={styles.importantNoteText}>
-              Delivery Not Available{'\n'}{productData.deliveryReason}
-            </Text>
-          </View>
-        )}
-      </View>
-    );
+          {hasDeliveryConfig && (
+            <View style={styles.deliveryItem}>
+              <View style={styles.deliveryIconContainer}>
+                <Icon name="truck" size={20} color="#F59E0B" />
+              </View>
+              <View style={styles.deliveryContent}>
+                <Text style={styles.deliveryTitle}>Delivery Charges</Text>
+                <Text style={styles.deliveryDescription}>
+                  {deliveryConfig?.baseDeliveryCharge !== undefined 
+                    ? `Base: ₹${(deliveryConfig.baseDeliveryCharge || 0).toLocaleString()}`
+                    : 'Contact for pricing'
+                  }
+                  {deliveryConfig?.perKmCharge ? ` • ₹${deliveryConfig.perKmCharge}/km` : ''}
+                </Text>
+                {deliveryConfig?.freeDeliveryThreshold ? (
+                  <Text style={styles.deliveryDescription}>
+                    Free delivery for orders above ₹{deliveryConfig.freeDeliveryThreshold.toLocaleString()}
+                  </Text>
+                ) : null}
+              </View>
+            </View>
+          )}
+
+          {hasDeliveryReason && (
+            <View style={styles.importantNote}>
+              <Text style={styles.importantNoteText}>
+                Delivery Not Available{'\n'}{productData.deliveryReason || 'Delivery is not available for this product.'}
+              </Text>
+            </View>
+          )}
+        </View>
+      );
+    } catch (error) {
+      console.error('Error rendering delivery section:', error);
+      // Return null on error to prevent crash
+      return null;
+    }
   };
 
   const renderAddToCartButton = () => {

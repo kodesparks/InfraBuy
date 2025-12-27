@@ -225,9 +225,10 @@ export const cartService = {
 
   /**
    * Clear cart (delete all pending orders)
-   * @returns {Promise<Object>} Success/error response
+   * @param {Array} cartItems - Optional array of cart items to clear individually as fallback
+   * @returns {Promise<Object>} Success/error response with clearedCount and ordersCleared
    */
-  async clearCart() {
+  async clearCart(cartItems = null) {
     try {
       const url = API_ENDPOINTS.orders.clearCart.url;
 
@@ -242,6 +243,8 @@ export const cartService = {
         return {
           success: true,
           message: response.data?.message || 'Cart cleared successfully',
+          clearedCount: response.data?.clearedCount || 0,
+          ordersCleared: response.data?.ordersCleared || [],
         };
       }
 
@@ -250,10 +253,77 @@ export const cartService = {
         error: response.data?.error || response.data?.message || 'Failed to clear cart',
       };
     } catch (error) {
-      console.error('Error clearing cart:', error);
+      console.error('Error clearing cart via API endpoint:', error);
+      
+      // If 404 error and we have cart items, try clearing them individually as fallback
+      if (error.response?.status === 404 && cartItems && cartItems.length > 0) {
+        console.log('Clear endpoint not found (404). Attempting to clear cart items individually...');
+        return await this.clearCartFallback(cartItems);
+      }
+      
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to clear cart. Please try again.',
+      };
+    }
+  },
+
+  /**
+   * Fallback method to clear cart by removing items individually
+   * @param {Array} cartItems - Array of cart items to remove
+   * @returns {Promise<Object>} Success/error response
+   */
+  async clearCartFallback(cartItems) {
+    try {
+      const clearedItems = [];
+      let successCount = 0;
+      let failCount = 0;
+
+      // Remove each item individually
+      for (const item of cartItems) {
+        try {
+          const leadId = item.leadId || item.id;
+          if (!leadId) {
+            console.warn('Item missing leadId:', item);
+            failCount++;
+            continue;
+          }
+
+          const result = await this.removeFromCart(leadId);
+          if (result.success) {
+            successCount++;
+            clearedItems.push({
+              leadId: leadId,
+              totalAmount: item.totalPrice || 0,
+            });
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          console.error(`Error removing item ${item.leadId}:`, error);
+          failCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        return {
+          success: true,
+          message: `Cart cleared successfully (${successCount} item${successCount !== 1 ? 's' : ''} removed)`,
+          clearedCount: successCount,
+          ordersCleared: clearedItems,
+          fallback: true,
+        };
+      }
+
+      return {
+        success: false,
+        error: `Failed to clear ${failCount} item${failCount !== 1 ? 's' : ''} from cart`,
+      };
+    } catch (error) {
+      console.error('Error in clearCartFallback:', error);
+      return {
+        success: false,
+        error: 'Unable to clear cart. Please try again.',
       };
     }
   },
