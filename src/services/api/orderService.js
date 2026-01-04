@@ -61,10 +61,24 @@ export const orderService = {
       const response = await apiClient.get(url);
       
       if (response.data?.success !== false && response.status === 200) {
+        // API returns: { order, paymentInfo, statusHistory, deliveryInfo, message, ... }
+        // Return the full response data to preserve all fields including paymentInfo
+        const apiData = response.data;
+        const orderData = apiData?.order || apiData?.data?.order || apiData?.data || apiData;
+        
+        // Merge order data with other top-level fields (paymentInfo, statusHistory, deliveryInfo)
+        const fullData = {
+          ...orderData,
+          // Preserve top-level fields from API response
+          paymentInfo: apiData?.paymentInfo || orderData?.paymentInfo,
+          statusHistory: apiData?.statusHistory || orderData?.statusHistory,
+          deliveryInfo: apiData?.deliveryInfo || orderData?.deliveryInfo,
+        };
+        
         return {
           success: true,
-          data: response.data?.order || response.data?.data || response.data,
-          message: response.data?.message || 'Order details retrieved successfully',
+          data: fullData,
+          message: apiData?.message || 'Order details retrieved successfully',
         };
       }
 

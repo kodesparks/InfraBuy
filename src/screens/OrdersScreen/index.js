@@ -23,6 +23,7 @@ const OrdersScreen = ({ navigation }) => {
   const [showChangeDateModal, setShowChangeDateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderDetails, setOrderDetails] = useState(null);
+  const [orderDetailsLoading, setOrderDetailsLoading] = useState(false);
   const [changeEligibility, setChangeEligibility] = useState(null);
   const [trackingData, setTrackingData] = useState(null);
   const [trackingLoading, setTrackingLoading] = useState(false);
@@ -76,7 +77,9 @@ const OrdersScreen = ({ navigation }) => {
 
   const handleViewOrder = async (order) => {
     setSelectedOrder(order);
+    setOrderDetails(null); // Reset previous order details
     setShowOrderDetailsModal(true);
+    setOrderDetailsLoading(true);
     
     // Fetch order details and eligibility
     try {
@@ -87,6 +90,11 @@ const OrdersScreen = ({ navigation }) => {
       ]);
       
       if (detailsResult.success) {
+        console.log('📋 Order details received:', {
+          hasPaymentInfo: !!detailsResult.data?.paymentInfo,
+          paymentStatus: detailsResult.data?.paymentInfo?.paymentStatus,
+          dataKeys: Object.keys(detailsResult.data || {}),
+        });
         setOrderDetails(detailsResult.data);
       }
       if (eligibilityResult.success) {
@@ -94,6 +102,8 @@ const OrdersScreen = ({ navigation }) => {
       }
     } catch (error) {
       console.error('Error fetching order details:', error);
+    } finally {
+      setOrderDetailsLoading(false);
     }
   };
 
@@ -418,7 +428,12 @@ const OrdersScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
 
-            {selectedOrder && (
+            {orderDetailsLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#723FED" />
+                <Text style={styles.loadingText}>Loading order details...</Text>
+              </View>
+            ) : selectedOrder && (
               <ScrollView showsVerticalScrollIndicator={false}>
                 <View style={styles.orderDetailsContent}>
                   <View style={styles.detailSection}>
@@ -497,7 +512,25 @@ const OrdersScreen = ({ navigation }) => {
                     <Text style={styles.detailSectionTitle}>Payment Information</Text>
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Payment Status:</Text>
-                      <Text style={styles.detailValue}>{selectedOrder.paymentStatus || 'Pending'}</Text>
+                      {(() => {
+                        // Get payment status from orderDetails.paymentInfo (now included in API response)
+                        const paymentStatus = orderDetails?.paymentInfo?.paymentStatus || 
+                                            selectedOrder?.paymentStatus || 
+                                            'pending';
+                        const isSuccessful = paymentStatus === 'successful';
+                        
+                        return (
+                          <Text style={[
+                            styles.detailValue,
+                            {
+                              color: isSuccessful ? '#10B981' : '#EF4444',
+                              fontWeight: '600',
+                            }
+                          ]}>
+                            {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
+                          </Text>
+                        );
+                      })()}
                     </View>
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Total Amount:</Text>
@@ -789,17 +822,58 @@ const OrdersScreen = ({ navigation }) => {
                   )}
 
                   {/* Status Timeline */}
-                  {trackingData.statusTimeline && trackingData.statusTimeline.length > 0 && (
-                    <View style={styles.trackingSection}>
-                      <View style={styles.sectionHeader}>
-                        <Icon name="clock" size={20} color="#F59E0B" />
-                        <Text style={styles.sectionTitle}>Status Timeline</Text>
-                      </View>
-                      <View style={styles.timelineContainer}>
-                        {trackingData.statusTimeline.map((timelineItem, index) => {
-                          const isFirst = index === 0;
-                          const isLast = index === trackingData.statusTimeline.length - 1;
-                          const statusConfig = getStatusConfig(timelineItem.status);
+                  {trackingData.statusTimeline && trackingData.statusTimeline.length > 0 && (() => {
+                    // Deduplicate timeline: keep only the latest occurrence of each status
+                    // Also normalize status labels for comparison (e.g., "Order Placed" vs "order_placed")
+                    const normalizeStatusLabel = (label) => {
+                      if (!label) return '';
+                      return label.toLowerCase().replace(/\s+/g, '_').trim();
+                    };
+                    
+                    const deduplicatedTimeline = trackingData.statusTimeline.reduce((acc, item) => {
+                      // Normalize both status and statusLabel for comparison
+                      const itemStatus = item.status?.toLowerCase() || '';
+                      const itemLabel = normalizeStatusLabel(item.statusLabel);
+                      
+                      // Check if we already have this status (by status value or normalized label)
+                      const existingIndex = acc.findIndex(existing => {
+                        const existingStatus = existing.status?.toLowerCase() || '';
+                        const existingLabel = normalizeStatusLabel(existing.statusLabel);
+                        
+                        // Match by status value OR by normalized label
+                        return existingStatus === itemStatus || 
+                               (existingLabel && itemLabel && existingLabel === itemLabel);
+                      });
+                      
+                      if (existingIndex === -1) {
+                        // Status doesn't exist, add it
+                        acc.push(item);
+                      } else {
+                        // Status exists, compare dates and keep the latest one
+                        const existingDate = new Date(acc[existingIndex].date);
+                        const currentDate = new Date(item.date);
+                        if (currentDate > existingDate) {
+                          // Replace with newer one
+                          acc[existingIndex] = item;
+                        }
+                      }
+                      return acc;
+                    }, []);
+                    
+                    // Sort by date (newest first)
+                    deduplicatedTimeline.sort((a, b) => new Date(b.date) - new Date(a.date));
+                    
+                    return (
+                      <View style={styles.trackingSection}>
+                        <View style={styles.sectionHeader}>
+                          <Icon name="clock" size={20} color="#F59E0B" />
+                          <Text style={styles.sectionTitle}>Status Timeline</Text>
+                        </View>
+                        <View style={styles.timelineContainer}>
+                          {deduplicatedTimeline.map((timelineItem, index) => {
+                            const isFirst = index === 0;
+                            const isLast = index === deduplicatedTimeline.length - 1;
+                            const statusConfig = getStatusConfig(timelineItem.status);
                           
                           return (
                             <View key={index} style={styles.timelineItem}>
@@ -833,7 +907,8 @@ const OrdersScreen = ({ navigation }) => {
                         })}
                       </View>
                     </View>
-                  )}
+                    );
+                  })()}
                   </View>
                 </ScrollView>
               ) : (
