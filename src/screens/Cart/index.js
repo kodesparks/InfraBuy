@@ -7,6 +7,7 @@ import Toast from 'react-native-toast-message';
 import styles from '../../assets/styles/cart';
 import OrderConfirmation from '../../components/OrderConfirmation';
 import { colors } from '../../assets/styles/global';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 import { useAppContext } from '../../context/AppContext';
 import { useOrderContext } from '../../context/OrderContext';
 
@@ -466,6 +467,8 @@ const Cart = ({ navigation }) => {
           address: ''
         }}
       />
+
+      <CustomerCareFooter />
     </View>
   );
 };

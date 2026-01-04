@@ -181,7 +181,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Full Name"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.name}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, name: value }))}
                 autoCapitalize="words"
@@ -194,7 +194,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Company Name (Optional)"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.companyName}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, companyName: value }))}
                 autoCapitalize="words"
@@ -207,7 +207,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Email address"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.email}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, email: value }))}
                 keyboardType="email-address"
@@ -221,7 +221,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Phone number (10 digits)"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.phone}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, phone: value }))}
                 keyboardType="phone-pad"
@@ -235,7 +235,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Address"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.address}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, address: value }))}
                 multiline
@@ -249,7 +249,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Pincode"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.pincode}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
                 keyboardType="numeric"
@@ -263,7 +263,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Contract ID"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.contractId}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, contractId: value }))}
                 editable={!isLoading}
@@ -275,7 +275,7 @@ const SignupScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.password}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, password: value }))}
                 secureTextEntry
@@ -393,11 +393,11 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   loginText: {
-    color: '#E0E7FF',
+    color: colors.white,
     fontSize: 14,
   },
   loginLink: {
-    color: '#E0E7FF',
+    color: colors.white,
     fontSize: 14,
     fontWeight: 'bold',
   },

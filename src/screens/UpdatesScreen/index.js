@@ -8,26 +8,16 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const UpdatesScreen = ({ navigation }) => {
   const [activeFilter, setActiveFilter] = useState('All');
 
-  const filters = ['All', 'Orders', 'Offers', 'Trades'];
+  const filters = ['All', 'Tenders', 'Offers'];
 
   const updates = [
     {
       id: 1,
-      type: 'Orders',
-      title: 'Order Delivered Successfully',
-      description: 'Your order #ORD001 of UltraTech Cement has been delivered to your site.',
-      action: 'View Details',
-      actionColor: '#3B82F6',
-      timestamp: '2 hours ago',
-      icon: 'truck',
-      iconBgColor: '#10B981',
-    },
-    {
-      id: 2,
       type: 'Offers',
       title: 'Special Discount Available',
       description: 'Get 15% off on ACC Cement. Limited time offer valid till 31st Jan.',
@@ -38,8 +28,30 @@ const UpdatesScreen = ({ navigation }) => {
       iconBgColor: '#F97316',
     },
     {
+      id: 2,
+      type: 'Tenders',
+      title: 'New Tender Opportunity',
+      description: 'A new tender request for ACC Cement has been received. Review and respond.',
+      action: 'View Tender',
+      actionColor: '#8B5CF6',
+      timestamp: '3 hours ago',
+      icon: 'briefcase',
+      iconBgColor: '#8B5CF6',
+    },
+    {
       id: 3,
-      type: 'Orders',
+      type: 'Tenders',
+      title: 'Tender Completed',
+      description: 'Your tender for UltraTech Cement has been successfully completed.',
+      action: 'View Details',
+      actionColor: '#8B5CF6',
+      timestamp: '2 days ago',
+      icon: 'check-circle',
+      iconBgColor: '#10B981',
+    },
+    {
+      id: 4,
+      type: 'Offers',
       title: 'Back in Stock',
       description: 'JSW Steel rods are now available. Place your order now!',
       action: 'View Details',
@@ -47,28 +59,6 @@ const UpdatesScreen = ({ navigation }) => {
       timestamp: '1 day ago',
       icon: 'package',
       iconBgColor: '#60A5FA',
-    },
-    {
-      id: 4,
-      type: 'Trades',
-      title: 'New Trade Opportunity',
-      description: 'A new trade request for ACC Cement has been received. Review and respond.',
-      action: 'View Trade',
-      actionColor: '#8B5CF6',
-      timestamp: '3 hours ago',
-      icon: 'briefcase',
-      iconBgColor: '#8B5CF6',
-    },
-    {
-      id: 5,
-      type: 'Trades',
-      title: 'Trade Completed',
-      description: 'Your trade for UltraTech Cement has been successfully completed.',
-      action: 'View Details',
-      actionColor: '#8B5CF6',
-      timestamp: '2 days ago',
-      icon: 'check-circle',
-      iconBgColor: '#10B981',
     },
   ];
 
@@ -143,13 +133,11 @@ const UpdatesScreen = ({ navigation }) => {
   );
 
   const handleUpdateAction = (update) => {
-    if (update.type === 'Orders') {
-      navigation.navigate('OrdersScreen');
-    } else if (update.type === 'Offers') {
+    if (update.type === 'Offers') {
       navigation.navigate('ProductListing', { category: 'Cement' });
-    } else if (update.type === 'Trades') {
-      // Navigate to trades screen or handle trade action
-      // You can update this navigation based on your trades screen route
+    } else if (update.type === 'Tenders') {
+      // Navigate to tenders screen or handle tender action
+      // You can update this navigation based on your tenders screen route
       navigation.navigate('MainApp');
     }
   };
@@ -168,6 +156,8 @@ const UpdatesScreen = ({ navigation }) => {
           {filteredUpdates.map(renderUpdateCard)}
         </View>
       </ScrollView>
+
+      <CustomerCareFooter />
     </View>
   );
 };

@@ -57,6 +57,11 @@ export const API_ENDPOINTS = {
       method: 'POST',
       requiresAuth: false,
     },
+    changePassword: {
+      url: '/api/auth/change-password',
+      method: 'PUT',
+      requiresAuth: true,
+    },
   },
   inventory: {
     getInventoryPricing: {

@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import AddToCartSuccessModal from '../../components/common/AddToCartSuccessModal';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const ProductDetail = ({ navigation, route }) => {
   const { product } = route.params || {};
@@ -237,9 +238,6 @@ const ProductDetail = ({ navigation, route }) => {
               {subCategory} {grade}
             </Text>
           </View>
-        )}
-        {productData?.formattedItemCode && (
-          <Text style={styles.itemCodeText}>Item Code: {productData.formattedItemCode}</Text>
         )}
       </View>
     );
@@ -636,6 +634,8 @@ const ProductDetail = ({ navigation, route }) => {
         quantity={quantity}
         unit={productData?.units || productData?.unit || 'PIECE'}
       />
+
+      <CustomerCareFooter />
     </View>
   );
 };

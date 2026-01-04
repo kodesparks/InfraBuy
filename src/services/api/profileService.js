@@ -173,6 +173,45 @@ export const updateMobile = async (userId, mobileData) => {
 };
 
 /**
+ * Change user password
+ * PUT /api/auth/change-password
+ */
+export const changePassword = async (currentPassword, newPassword) => {
+  try {
+    console.log('🌐 Changing password...');
+    const response = await apiClient.put(API_ENDPOINTS.auth.changePassword.url, {
+      currentPassword,
+      newPassword,
+    });
+    
+    if (response.data) {
+      console.log('✅ Password changed successfully:', response.data);
+      return {
+        success: true,
+        message: response.data.message || 'Password changed successfully',
+      };
+    }
+    
+    return {
+      success: false,
+      error: {
+        message: 'Failed to change password',
+      },
+    };
+  } catch (error) {
+    console.error('❌ Error changing password:', error);
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || error.message || 'Failed to change password',
+        status: error.response?.status,
+        details: error.response?.data,
+      },
+    };
+  }
+};
+
+/**
  * Upload user avatar/profile picture
  * POST /api/users/{userId}/avatar
  */

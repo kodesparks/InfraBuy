@@ -1,6 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, Image, ActivityIndicator } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LoginScreen from '../screens/LoginScreen/index';
@@ -19,7 +19,6 @@ import PaymentScreen from '../screens/PaymentScreen/index';
 import AppHeader from '../components/common/AppHeader';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
-import { ActivityIndicator } from 'react-native';
 
 const Stack = createStackNavigator();
 
@@ -600,6 +599,11 @@ const AppNavigator = () => {
   if (isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#723FED' }}>
+        <Image 
+          source={require('../assets/images/logo.png')} 
+          style={{ width: 200, height: 200, marginBottom: 20 }}
+          resizeMode="contain"
+        />
         <ActivityIndicator size="large" color="#FFFFFF" />
       </View>
     );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, RefreshControl, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, RefreshControl, Dimensions, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
@@ -7,6 +7,7 @@ import { colors, typography, spacing, borderRadius } from '../../assets/styles/g
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
 import AddToCartSuccessModal from '../../components/common/AddToCartSuccessModal';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 import { inventoryService, mapInventoryItemToProduct } from '../../services/api/inventoryService';
 import productListingStyles from '../../assets/styles/productListing';
 
@@ -37,6 +38,8 @@ const ProductListing = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('none'); // 'none', 'low-to-high', 'high-to-low'
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
   const [showPincodeModal, setShowPincodeModal] = useState(false);
   const [pagination, setPagination] = useState(null);
@@ -170,6 +173,30 @@ const ProductListing = ({ navigation, route }) => {
     }
     
     return true;
+  });
+
+  // Sort products based on selected sort option
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortBy === 'none') return 0;
+    
+    // Get price for comparison - use totalPrice if pincode is set, otherwise currentPrice
+    const getPrice = (product) => {
+      if (userPincode && product.totalPrice) {
+        return product.totalPrice;
+      }
+      return product.currentPrice || product.basePrice || 0;
+    };
+    
+    const priceA = getPrice(a);
+    const priceB = getPrice(b);
+    
+    if (sortBy === 'low-to-high') {
+      return priceA - priceB;
+    } else if (sortBy === 'high-to-low') {
+      return priceB - priceA;
+    }
+    
+    return 0;
   });
 
   const handleProductPress = (product) => {
@@ -463,6 +490,22 @@ const ProductListing = ({ navigation, route }) => {
             renderFilterButton(subCategories, selectedSubCategory, setSelectedSubCategory, 'Subcategory')
           )}
 
+          {/* Sorting Dropdown */}
+          {!loading && !error && filteredProducts.length > 0 && (
+            <View style={styles.filterSection}>
+              <Text style={styles.filterTitle}>Sort By Price</Text>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowSortDropdown(true)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {sortBy === 'none' ? 'Default' : sortBy === 'low-to-high' ? 'Low to High' : 'High to Low'}
+                </Text>
+                <Icon name="chevron-down" size={20} color="#723FED" />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Loading State */}
           {loading && renderLoadingState()}
 
@@ -470,13 +513,13 @@ const ProductListing = ({ navigation, route }) => {
           {!loading && error && renderErrorState()}
 
           {/* Empty State */}
-          {!loading && !error && filteredProducts.length === 0 && renderEmptyState()}
+          {!loading && !error && sortedProducts.length === 0 && renderEmptyState()}
 
           {/* Products Grid */}
-          {!loading && !error && filteredProducts.length > 0 && (
+          {!loading && !error && sortedProducts.length > 0 && (
             <View style={styles.productsContainer}>
               <View style={styles.productsGrid}>
-                {filteredProducts.map((product, index) => (
+                {sortedProducts.map((product, index) => (
                   <View key={product.id || product._id || index} style={styles.productCardWrapper}>
                     {renderProductCard(product)}
                   </View>
@@ -510,6 +553,53 @@ const ProductListing = ({ navigation, route }) => {
         quantity={1}
         unit={addedProduct?.units || addedProduct?.unit || 'PIECE'}
       />
+
+      {/* Sort Dropdown Modal */}
+      <Modal
+        visible={showSortDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSortDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowSortDropdown(false)}
+        >
+          <View style={styles.dropdownContainer}>
+            <Text style={styles.dropdownTitle}>Sort By Price</Text>
+            {[
+              { value: 'none', label: 'Default' },
+              { value: 'low-to-high', label: 'Low to High' },
+              { value: 'high-to-low', label: 'High to Low' }
+            ].map(option => (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.dropdownOption,
+                  sortBy === option.value && styles.dropdownOptionSelected
+                ]}
+                onPress={() => {
+                  setSortBy(option.value);
+                  setShowSortDropdown(false);
+                }}
+              >
+                <Text style={[
+                  styles.dropdownOptionText,
+                  sortBy === option.value && styles.dropdownOptionTextSelected
+                ]}>
+                  {option.label}
+                </Text>
+                {sortBy === option.value && (
+                  <Icon name="check" size={20} color="#723FED" />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      <CustomerCareFooter />
     </>
   );
 };
@@ -635,6 +725,71 @@ const styles = StyleSheet.create({
     color: colors.textWhite,
     textAlign: 'center',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E8E5FF',
+    borderRadius: 12,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#723FED',
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#723FED',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.md,
+    width: '80%',
+    maxWidth: 300,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  dropdownOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.xs,
+  },
+  dropdownOptionSelected: {
+    backgroundColor: '#E8E5FF',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontWeight: '500',
+  },
+  dropdownOptionTextSelected: {
+    color: '#723FED',
     fontWeight: '600',
   },
   productsContainer: {

@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const { width } = Dimensions.get('window');
 
@@ -160,12 +161,12 @@ const HomeScreen = ({ navigation }) => {
         </LinearGradient>
 
         {/* Quick Actions Section */}
-        <View style={styles.quickActionsSection}>
+        {/* <View style={styles.quickActionsSection}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActionsGrid}>
             {quickActions.map(renderQuickAction)}
           </View>
-        </View>
+        </View> */}
 
         {/* Categories Section */}
         <View style={styles.categoriesSection}>
@@ -218,6 +219,8 @@ const HomeScreen = ({ navigation }) => {
         onClose={() => setShowPincodeModal(false)}
         onPincodeSet={handlePincodeSet}
       />
+
+      <CustomerCareFooter />
     </View>
   );
 };

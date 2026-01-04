@@ -193,7 +193,7 @@ const LoginScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder={loginMethod === 'email' ? "Email address" : "Mobile number"}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={loginMethod === 'email' ? formData.email : formData.mobile}
                 onChangeText={(value) => setFormData(prev => ({ 
                   ...prev, 
@@ -211,7 +211,7 @@ const LoginScreen = ({ navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Password"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.password}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, password: value }))}
                 secureTextEntry

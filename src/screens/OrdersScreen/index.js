@@ -10,6 +10,7 @@ import { getStatusConfig, isTrackableStatus, shouldShowPayNow } from '../../util
 import OrderTimeline from '../../components/orders/OrderTimeline';
 import ChangeAddressModal from '../../components/orders/ChangeAddressModal';
 import ChangeDateModal from '../../components/orders/ChangeDateModal';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const OrdersScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
@@ -264,11 +265,6 @@ const OrdersScreen = ({ navigation }) => {
             <Text style={styles.summaryLabel}>Total:</Text>
             <Text style={styles.summaryValue}>{formatCurrency(order.totalAmount)}</Text>
           </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summarySubtext}>
-              {order.paymentStatus || 'Payment'} | Est. Delivery: {formatDate(order.deliveryExpectedDate)}
-            </Text>
-          </View>
         </View>
 
         {/* Action Buttons */}
@@ -506,10 +502,6 @@ const OrdersScreen = ({ navigation }) => {
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Total Amount:</Text>
                       <Text style={styles.detailValueBold}>{formatCurrency(selectedOrder.totalAmount)}</Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Delivery Charges:</Text>
-                      <Text style={styles.detailValue}>{formatCurrency(selectedOrder.deliveryCharges)}</Text>
                     </View>
                   </View>
                 </View>
@@ -879,6 +871,8 @@ const OrdersScreen = ({ navigation }) => {
           fetchOrders(selectedStatus !== 'all' ? selectedStatus : null);
         }}
       />
+
+      <CustomerCareFooter />
     </View>
   );
 };

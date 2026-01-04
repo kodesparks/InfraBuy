@@ -17,6 +17,7 @@ import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius, typography } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import { cartService } from '../../services/api/cartService';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const DeliveryDetails = ({ navigation, route }) => {
   const { cartItems, userPincode, fetchCartItems } = useAppContext();
@@ -303,7 +304,7 @@ const DeliveryDetails = ({ navigation, route }) => {
           
           {renderInputField('fullName', 'Full Name', 'Enter your full name', { required: true })}
           
-          {renderInputField('phoneNumber', 'Phone Number', 'Enter your phone number', {
+          {renderInputField('phoneNumber', 'Receiver Phone Number', 'Enter receiver phone number', {
             required: true,
             keyboardType: 'phone-pad',
             maxLength: 10,
@@ -430,6 +431,8 @@ const DeliveryDetails = ({ navigation, route }) => {
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
+
+      <CustomerCareFooter />
     </KeyboardAvoidingView>
   );
 };

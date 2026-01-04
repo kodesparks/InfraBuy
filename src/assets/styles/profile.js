@@ -151,6 +151,22 @@ export default StyleSheet.create({
   infoGrid: {
     gap: spacing.md,
   },
+  securityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: '#F9FAFB',
+    marginBottom: spacing.xs,
+  },
+  securityItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',

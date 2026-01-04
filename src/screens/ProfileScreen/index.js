@@ -26,6 +26,8 @@ import { updateProfile, updateEmail, updateMobile, uploadAvatar } from '../../se
 import EditProfileModal from '../../components/profile/EditProfileModal';
 import EditEmailModal from '../../components/profile/EditEmailModal';
 import EditMobileModal from '../../components/profile/EditMobileModal';
+import ChangePasswordModal from '../../components/profile/ChangePasswordModal';
+import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, logout, refreshProfile } = useAuth();
@@ -34,6 +36,7 @@ const ProfileScreen = ({ navigation }) => {
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showEditEmailModal, setShowEditEmailModal] = useState(false);
   const [showEditMobileModal, setShowEditMobileModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
 
   // Use real user data from AuthContext, fallback to empty object
   const userData = user || {};
@@ -381,6 +384,28 @@ const ProfileScreen = ({ navigation }) => {
           </View>
         </View>
 
+        {/* Security Settings Section */}
+        <View style={styles.sectionCard}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Security</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.securityItem}
+            onPress={() => setShowChangePasswordModal(true)}
+          >
+            <View style={styles.securityItemLeft}>
+              <View style={styles.infoIconContainer}>
+                <Icon name="lock" size={20} color="#3B82F6" />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Change Password</Text>
+                <Text style={styles.infoValue}>Update your account password</Text>
+              </View>
+            </View>
+            <Icon name="chevron-right" size={20} color="#9CA3AF" />
+          </TouchableOpacity>
+        </View>
+
         {/* Account Status Section */}
         <View style={styles.sectionCard}>
           <Text style={styles.sectionTitle}>Account Status</Text>
@@ -503,6 +528,20 @@ const ProfileScreen = ({ navigation }) => {
         user={userData}
         onSuccess={(updatedData) => refreshProfile(updatedData)}
       />
+
+      <ChangePasswordModal
+        visible={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          Toast.show({
+            type: 'success',
+            text1: 'Success',
+            text2: 'Password changed successfully',
+          });
+        }}
+      />
+
+      <CustomerCareFooter />
     </View>
   );
 };
