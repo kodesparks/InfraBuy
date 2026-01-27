@@ -483,17 +483,13 @@ const ProductDetail = ({ navigation, route }) => {
 
     try {
       const warehouse = productData.warehouse || {};
-      const deliveryConfig = warehouse?.deliveryConfig || {};
       
       // Check if there's any delivery information to show
       const hasWarehouseInfo = warehouse?.warehouseName;
-      const hasDeliveryConfig = deliveryConfig?.baseDeliveryCharge !== undefined || 
-                                deliveryConfig?.perKmCharge !== undefined ||
-                                deliveryConfig?.freeDeliveryThreshold !== undefined;
       const hasDeliveryReason = !productData?.isDeliveryAvailable && productData?.deliveryReason;
       
       // Don't render section if there's no information to display
-      if (!hasWarehouseInfo && !hasDeliveryConfig && !hasDeliveryReason) {
+      if (!hasWarehouseInfo && !hasDeliveryReason) {
         return null;
       }
       
@@ -523,29 +519,6 @@ const ProductDetail = ({ navigation, route }) => {
                     {warehouse.location.address}
                   </Text>
                 )}
-              </View>
-            </View>
-          )}
-
-          {hasDeliveryConfig && (
-            <View style={styles.deliveryItem}>
-              <View style={styles.deliveryIconContainer}>
-                <Icon name="truck" size={20} color="#F59E0B" />
-              </View>
-              <View style={styles.deliveryContent}>
-                <Text style={styles.deliveryTitle}>Delivery Charges</Text>
-                <Text style={styles.deliveryDescription}>
-                  {deliveryConfig?.baseDeliveryCharge !== undefined 
-                    ? `Base: ₹${(deliveryConfig.baseDeliveryCharge || 0).toLocaleString()}`
-                    : 'Contact for pricing'
-                  }
-                  {deliveryConfig?.perKmCharge ? ` • ₹${deliveryConfig.perKmCharge}/km` : ''}
-                </Text>
-                {deliveryConfig?.freeDeliveryThreshold ? (
-                  <Text style={styles.deliveryDescription}>
-                    Free delivery for orders above ₹{deliveryConfig.freeDeliveryThreshold.toLocaleString()}
-                  </Text>
-                ) : null}
               </View>
             </View>
           )}

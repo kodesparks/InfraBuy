@@ -12,6 +12,18 @@ import ChangeAddressModal from '../../components/orders/ChangeAddressModal';
 import ChangeDateModal from '../../components/orders/ChangeDateModal';
 import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 
+// Helper function to format status labels (replace underscores with spaces and capitalize)
+const formatStatusLabel = (label) => {
+  if (!label) return '';
+  // Replace underscores with spaces
+  const formatted = label.replace(/_/g, ' ');
+  // Capitalize each word
+  return formatted
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+};
+
 const OrdersScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -558,7 +570,7 @@ const OrdersScreen = ({ navigation }) => {
                 <Text style={styles.trackingStatusLabel}>ORDER TRACKING</Text>
                 {trackingData?.currentStatus && (
                   <View style={[styles.statusBadge, { backgroundColor: getStatusConfig(trackingData.currentStatus.status).color, marginTop: spacing.xs }]}>
-                    <Text style={styles.statusText}>{trackingData.currentStatus.statusLabel}</Text>
+                    <Text style={styles.statusText}>{formatStatusLabel(trackingData.currentStatus.statusLabel)}</Text>
                   </View>
                 )}
                 {trackingData?.currentStatus?.statusDescription && (
@@ -886,7 +898,7 @@ const OrdersScreen = ({ navigation }) => {
                               <View style={styles.timelineContent}>
                                 <View style={styles.timelineCard}>
                                   <View style={styles.timelineHeader}>
-                                    <Text style={styles.timelineLabel}>{timelineItem.statusLabel}</Text>
+                                    <Text style={styles.timelineLabel}>{formatStatusLabel(timelineItem.statusLabel)}</Text>
                                     <Text style={styles.timelineDate}>
                                       {new Date(timelineItem.date).toLocaleString('en-IN', {
                                         day: 'numeric',

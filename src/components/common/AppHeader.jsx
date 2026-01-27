@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
@@ -84,17 +84,7 @@ const AppHeader = ({
           />
         </TouchableOpacity>
         
-        {title === 'infraXpert' ? (
-          <View style={styles.logoContainer}>
-            <Image 
-              source={require('../../assets/images/logo.png')} 
-              style={styles.logoImage}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <Text style={styles.headerTitle}>{title}</Text>
-        )}
+        <Text style={styles.headerTitle}>{title}</Text>
         
         <View style={styles.headerRight}>
           <TouchableOpacity style={styles.headerIcon} onPress={handleHelpPress}>
@@ -205,19 +195,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
     color: colors.white,
-  },
-  logoContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 60,
-    
-    // marginLeft: spacing.sm,
-  },
-  logoImage: {
-    marginTop: 20,
-    width: 200,
-    height: 130,
   },
 });
 
