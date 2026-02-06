@@ -259,46 +259,23 @@ const ProductDetail = ({ navigation, route }) => {
     
     return (
       <View style={styles.pricingCard}>
-        {/* Price Display */}
+        {/* Price hidden per handoff */}
         <View style={styles.priceSection}>
           <View style={styles.priceContainer}>
-            {hasDiscount ? (
-              <View style={styles.priceRow}>
-                <Text style={styles.originalPriceLarge}>
-                  ₹{basePrice.toLocaleString()}
-                </Text>
-                <Text style={styles.currentPriceLarge}>
-                  ₹{currentPrice.toLocaleString()}
-                </Text>
-                {discount > 0 && (
-                  <View style={styles.discountBadge}>
-                    <Text style={styles.discountBadgeText}>{discount}% OFF</Text>
-                  </View>
-                )}
-              </View>
-            ) : (
-              <Text style={styles.currentPriceLarge}>
-                ₹{currentPrice.toLocaleString()}
-              </Text>
-            )}
+            <Text style={styles.currentPriceLarge}>Price on request</Text>
             <Text style={styles.priceUnit}>/{units}</Text>
           </View>
         </View>
 
-        {/* Delivery Information - Only show if pincode is set */}
         {userPincode && (
           <View style={styles.deliveryInfoSection}>
             <View style={styles.deliveryInfoRow}>
               <Text style={styles.deliveryInfoLabel}>Base Price:</Text>
-              <Text style={styles.deliveryInfoValue}>
-                ₹{currentPrice.toLocaleString()}/{units}
-              </Text>
+              <Text style={styles.deliveryInfoValue}>—</Text>
             </View>
             <View style={styles.totalPriceRow}>
               <Text style={styles.totalPriceLabel}>Total:</Text>
-              <Text style={styles.totalPriceValue}>
-                ₹{totalPrice.toLocaleString()}/{units}
-              </Text>
+              <Text style={styles.totalPriceValue}>—</Text>
             </View>
           </View>
         )}
@@ -346,9 +323,7 @@ const ProductDetail = ({ navigation, route }) => {
             </View>
           </View>
           <View style={styles.totalSection}>
-            <Text style={styles.totalAmount}>
-              ₹{grandTotal.toLocaleString()}
-            </Text>
+            <Text style={styles.totalAmount}>—</Text>
             <Text style={styles.totalLabel}>Total Amount</Text>
           </View>
         </View>

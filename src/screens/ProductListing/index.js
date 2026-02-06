@@ -259,33 +259,11 @@ const ProductListing = ({ navigation, route }) => {
             {product.name || product.itemDescription}
           </Text>
 
-          {/* Pricing Section - Simplified */}
+          {/* Price hidden per handoff - show placeholder */}
           <View style={styles.pricingSection}>
-            {userPincode ? (
-              // With Pincode - Show total price
-              <View style={styles.priceContainer}>
-                {hasDiscount && (
-                  <Text style={styles.originalPrice}>
-                    ₹{product.basePrice.toLocaleString()}
-                  </Text>
-                )}
-                <Text style={styles.totalPrice}>
-                  ₹{product.totalPrice.toLocaleString()}/{product.units}
-                </Text>
-              </View>
-            ) : (
-              // Without Pincode - Show current price
-              <View style={styles.priceContainer}>
-                {hasDiscount && (
-                  <Text style={styles.originalPrice}>
-                    ₹{product.basePrice.toLocaleString()}
-                  </Text>
-                )}
-                <Text style={styles.currentPrice}>
-                  ₹{product.currentPrice.toLocaleString()}/{product.units}
-                </Text>
-              </View>
-            )}
+            <View style={styles.priceContainer}>
+              <Text style={styles.currentPrice}>Price on request</Text>
+            </View>
           </View>
 
           {/* Action Button */}
@@ -493,7 +471,7 @@ const ProductListing = ({ navigation, route }) => {
           {/* Sorting Dropdown */}
           {!loading && !error && filteredProducts.length > 0 && (
             <View style={styles.filterSection}>
-              <Text style={styles.filterTitle}>Sort By Price</Text>
+              <Text style={styles.filterTitle}>Sort</Text>
               <TouchableOpacity
                 style={styles.dropdownButton}
                 onPress={() => setShowSortDropdown(true)}
@@ -567,7 +545,7 @@ const ProductListing = ({ navigation, route }) => {
           onPress={() => setShowSortDropdown(false)}
         >
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownTitle}>Sort By Price</Text>
+            <Text style={styles.dropdownTitle}>Sort</Text>
             {[
               { value: 'none', label: 'Default' },
               { value: 'low-to-high', label: 'Low to High' },

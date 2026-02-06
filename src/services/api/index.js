@@ -24,6 +24,9 @@ export { createResource, handleError } from './baseService';
 // Signup Service
 export { registerUser } from './signupService';
 
+// Auth Service (verify email, OTP)
+export { verifyEmailByLink, verifyEmailByOtp, otpGenerate, otpVerify } from './authService';
+
 // Login Service
 export { loginUser, refreshToken, logoutUser } from './loginService';
 

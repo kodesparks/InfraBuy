@@ -62,6 +62,26 @@ export const API_ENDPOINTS = {
       method: 'PUT',
       requiresAuth: true,
     },
+    verifyEmailLink: {
+      url: '/api/auth/verify-email',
+      method: 'GET',
+      requiresAuth: false,
+    },
+    verifyEmailOtp: {
+      url: '/api/auth/verify-email',
+      method: 'POST',
+      requiresAuth: false,
+    },
+    otpGenerate: {
+      url: '/api/auth/otp/generate',
+      method: 'POST',
+      requiresAuth: false,
+    },
+    otpVerify: {
+      url: '/api/auth/otp/verify',
+      method: 'POST',
+      requiresAuth: false,
+    },
   },
   inventory: {
     getInventoryPricing: {
@@ -198,6 +218,30 @@ export const API_ENDPOINTS = {
       url: '/api/order/customer/orders/{leadId}/delivery-date',
       method: 'PUT',
       requiresAuth: true,
+    },
+    pdfQuote: {
+      url: '/api/order/customer/orders/{leadId}/pdf/quote',
+      method: 'GET',
+      requiresAuth: true,
+      responseType: 'blob',
+    },
+    pdfSalesOrder: {
+      url: '/api/order/customer/orders/{leadId}/pdf/sales-order',
+      method: 'GET',
+      requiresAuth: true,
+      responseType: 'blob',
+    },
+    pdfInvoice: {
+      url: '/api/order/customer/orders/{leadId}/pdf/invoice',
+      method: 'GET',
+      requiresAuth: true,
+      responseType: 'blob',
+    },
+    pdfEwaybill: {
+      url: '/api/order/customer/orders/{leadId}/pdf/ewaybill',
+      method: 'GET',
+      requiresAuth: true,
+      responseType: 'blob',
     },
   },
   location: {

@@ -203,6 +203,10 @@ const DeliveryDetails = ({ navigation, route }) => {
         deliveryPincode: formData.pinCode,
         deliveryExpectedDate,
         receiverMobileNum: formData.phoneNumber,
+        receiverName: formData.fullName,
+        email: formData.email || '',
+        city: formData.city || '',
+        state: formData.state || '',
       };
 
       // Place order for each cart item

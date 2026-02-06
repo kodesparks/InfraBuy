@@ -6,7 +6,9 @@ import Icon from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { orderService } from '../../services/api/orderService';
+import { getAccessToken } from '../../services/auth/tokenManager';
 import { getStatusConfig, isTrackableStatus, shouldShowPayNow } from '../../utils/orderStatus';
+import { downloadAndOpenPdf } from '../../utils/pdfDownload';
 import OrderTimeline from '../../components/orders/OrderTimeline';
 import ChangeAddressModal from '../../components/orders/ChangeAddressModal';
 import ChangeDateModal from '../../components/orders/ChangeDateModal';
@@ -203,8 +205,53 @@ const OrdersScreen = ({ navigation }) => {
     });
   };
 
-  const formatCurrency = (amount) => {
-    return `₹${amount?.toFixed(2) || '0.00'}`;
+  // Price hiding: do not show amounts anywhere
+  const formatPricePlaceholder = () => '—';
+
+  /**
+   * PDF: show only one at a time (handoff §3).
+   * Order Accepted (vendor_accepted) → Quote only.
+   * Order confirmed / payment (order_confirmed, payment_done, truck_loading, shipped) → Sales Order only (no Quote).
+   * Delivery (in_transit, out_for_delivery, delivered) → Invoice + E-way only (no Quote, no Sales Order).
+   */
+  const STATUSES_HIDE_MODIFICATIONS = ['truck_loading', 'shipped', 'in_transit', 'out_for_delivery', 'delivered'];
+  const canShowOrderModifications = (status) => status && !STATUSES_HIDE_MODIFICATIONS.includes(status);
+
+  const [pdfLoading, setPdfLoading] = useState(null);
+  const handlePdf = async (leadId, type, label, orderStatus) => {
+    setPdfLoading(`${leadId}-${type}`);
+    try {
+      const token = await getAccessToken();
+      if (!token) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Please sign in to download' });
+        return;
+      }
+      const fullUrl = orderService.getPdfUrl(leadId, type);
+      if (!fullUrl) {
+        Toast.show({ type: 'error', text1: 'Error', text2: 'Invalid document type' });
+        return;
+      }
+      const result = await downloadAndOpenPdf(fullUrl, token, label);
+      if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Downloaded',
+          text2: result.opened === false ? 'Saved to Downloads. Open from File Manager.' : 'Opened.',
+        });
+      } else if (type === 'quote') {
+        const isPlacedOrPending = !orderStatus || orderStatus === 'order_placed' || orderStatus === 'pending';
+        const message = isPlacedOrPending
+          ? 'Quote is generated when the order is confirmed.'
+          : (result.apiMessage || result.error || 'Quote not available; try again in a moment.');
+        Toast.show({ type: 'info', text1: 'Quote', text2: message });
+      } else {
+        Toast.show({ type: 'error', text1: 'Download failed', text2: result.error || result.apiMessage || 'Try again' });
+      }
+    } catch (e) {
+      Toast.show({ type: 'error', text1: 'Error', text2: e?.message || 'Download failed' });
+    } finally {
+      setPdfLoading(null);
+    }
   };
 
   const renderOrderCard = (order) => {
@@ -271,7 +318,7 @@ const OrdersScreen = ({ navigation }) => {
                   {firstItem.name}
                 </Text>
                 <Text style={styles.itemDetails}>
-                  Qty: {firstItem.quantity} • {formatCurrency(firstItem.totalCost)}
+                  Qty: {firstItem.quantity}
                 </Text>
               </View>
             </View>
@@ -281,11 +328,11 @@ const OrdersScreen = ({ navigation }) => {
           </View>
         )}
 
-        {/* Order Summary */}
+        {/* Order Summary - price hidden per handoff */}
         <View style={styles.orderSummary}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Total:</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(order.totalAmount)}</Text>
+            <Text style={styles.summaryValue}>{formatPricePlaceholder()}</Text>
           </View>
         </View>
 
@@ -322,17 +369,15 @@ const OrdersScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
           
-          <TouchableOpacity
-            style={styles.invoiceButton}
-            onPress={() => Toast.show({
-              type: 'info',
-              text1: 'Invoice',
-              text2: `Invoice: ${order.invoiceNumber || 'N/A'}`,
-            })}
-          >
-            <Icon name="file-text" size={16} color="#723FED" />
-            <Text style={styles.invoiceButtonText}>Invoice</Text>
-          </TouchableOpacity>
+          {['truck_loading','shipped','in_transit','out_for_delivery','delivered'].includes(order.status) && (
+            <TouchableOpacity
+              style={styles.invoiceButton}
+              onPress={() => handleViewOrder(order)}
+            >
+              <Icon name="file-text" size={16} color="#723FED" />
+              <Text style={styles.invoiceButtonText}>Documents</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -475,9 +520,7 @@ const OrdersScreen = ({ navigation }) => {
                         )}
                         <View style={styles.detailItemInfo}>
                           <Text style={styles.detailItemName}>{item.name}</Text>
-                          <Text style={styles.detailItemText}>
-                            Qty: {item.quantity} × {formatCurrency(item.unitPrice)} = {formatCurrency(item.totalCost)}
-                          </Text>
+                          <Text style={styles.detailItemText}>Qty: {item.quantity}</Text>
                         </View>
                       </View>
                     ))}
@@ -490,7 +533,7 @@ const OrdersScreen = ({ navigation }) => {
                     <Text style={styles.detailText}>
                       Expected Delivery: {formatDate(selectedOrder.deliveryExpectedDate)}
                     </Text>
-                    {changeEligibility && (
+                    {canShowOrderModifications(selectedOrder?.status) && changeEligibility && (
                       <View style={styles.changeActions}>
                         {changeEligibility.canChangeAddress && (
                           <TouchableOpacity
@@ -513,42 +556,143 @@ const OrdersScreen = ({ navigation }) => {
                             }}
                           >
                             <Icon name="calendar" size={16} color="#723FED" />
-                            <Text style={styles.changeButtonText}>Change Date</Text>
+                            <Text style={styles.changeButtonText}>Change Delivery Date</Text>
                           </TouchableOpacity>
                         )}
                       </View>
                     )}
                   </View>
 
+                  {orderDetails?.deliveryInfo && (
+                    <View style={styles.detailSection}>
+                      <Text style={styles.detailSectionTitle}>Delivery Tracking</Text>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Driver:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.deliveryInfo.driverName || '—'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Driver Phone:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.deliveryInfo.driverPhone || '—'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Truck Number:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.deliveryInfo.truckNumber || '—'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Vehicle Type:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.deliveryInfo.vehicleType || '—'}</Text>
+                      </View>
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Delivery Status:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.deliveryInfo.deliveryStatus || '—'}</Text>
+                      </View>
+                      {(orderDetails.deliveryInfo.expectedDeliveryDate || orderDetails.deliveryInfo.estimatedArrival) && (
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Expected:</Text>
+                          <Text style={styles.detailValue}>
+                            {formatDate(orderDetails.deliveryInfo.expectedDeliveryDate || orderDetails.deliveryInfo.estimatedArrival)}
+                          </Text>
+                        </View>
+                      )}
+                      {orderDetails.deliveryInfo.deliveryNotes ? (
+                        <View style={styles.detailRow}>
+                          <Text style={styles.detailLabel}>Notes:</Text>
+                          <Text style={styles.detailValue}>{orderDetails.deliveryInfo.deliveryNotes}</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  )}
+
                   <View style={styles.detailSection}>
                     <Text style={styles.detailSectionTitle}>Payment Information</Text>
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Payment Status:</Text>
                       {(() => {
-                        // Get payment status from orderDetails.paymentInfo (now included in API response)
-                        const paymentStatus = orderDetails?.paymentInfo?.paymentStatus || 
-                                            selectedOrder?.paymentStatus || 
-                                            'pending';
+                        const paymentStatus = orderDetails?.paymentInfo?.paymentStatus || selectedOrder?.paymentStatus || 'pending';
                         const isSuccessful = paymentStatus === 'successful';
-                        
                         return (
-                          <Text style={[
-                            styles.detailValue,
-                            {
-                              color: isSuccessful ? '#10B981' : '#EF4444',
-                              fontWeight: '600',
-                            }
-                          ]}>
+                          <Text style={[styles.detailValue, { color: isSuccessful ? '#10B981' : '#EF4444', fontWeight: '600' }]}>
                             {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
                           </Text>
                         );
                       })()}
                     </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Total Amount:</Text>
-                      <Text style={styles.detailValueBold}>{formatCurrency(selectedOrder.totalAmount)}</Text>
-                    </View>
+                    {orderDetails?.paymentInfo?.paymentMethod && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Payment Method:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.paymentInfo.paymentMethod || '—'}</Text>
+                      </View>
+                    )}
+                    {orderDetails?.paymentInfo?.utrNum && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>UTR Number:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.paymentInfo.utrNum}</Text>
+                      </View>
+                    )}
+                    {orderDetails?.paymentInfo?.transactionId && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Transaction ID:</Text>
+                        <Text style={styles.detailValue}>{orderDetails.paymentInfo.transactionId}</Text>
+                      </View>
+                    )}
                   </View>
+
+                  {/* PDF: only one at a time. Order Accepted = Quote only. Confirmed/payment = Sales Order only. Delivery = Invoice + E-way only. */}
+                  {selectedOrder && (() => {
+                    const leadId = selectedOrder.leadId || selectedOrder.id;
+                    const status = selectedOrder.status;
+                    const showQuoteOnly = status === 'vendor_accepted';
+                    const showSalesOrderOnly = ['order_confirmed', 'payment_done', 'truck_loading', 'shipped'].includes(status);
+                    const showInvoiceEwayOnly = ['in_transit', 'out_for_delivery', 'delivered'].includes(status);
+                    const loadingPdf = pdfLoading;
+                    return (
+                      <View style={styles.detailSection}>
+                        <Text style={styles.detailSectionTitle}>Documents</Text>
+                        <View style={styles.changeActions}>
+                          {showQuoteOnly && (
+                            <TouchableOpacity
+                              style={styles.changeButton}
+                              disabled={!!loadingPdf}
+                              onPress={() => handlePdf(leadId, 'quote', 'Quote', status)}
+                            >
+                              <Icon name="file-text" size={16} color="#723FED" />
+                              <Text style={styles.changeButtonText}>{loadingPdf === `${leadId}-quote` ? '...' : 'Quote'}</Text>
+                            </TouchableOpacity>
+                          )}
+                          {showSalesOrderOnly && (
+                            <TouchableOpacity
+                              style={styles.changeButton}
+                              disabled={!!loadingPdf}
+                              onPress={() => handlePdf(leadId, 'sales-order', 'Sales Order', status)}
+                            >
+                              <Icon name="file-text" size={16} color="#723FED" />
+                              <Text style={styles.changeButtonText}>{loadingPdf === `${leadId}-sales-order` ? '...' : 'Sales Order'}</Text>
+                            </TouchableOpacity>
+                          )}
+                          {showInvoiceEwayOnly && (
+                            <>
+                              <TouchableOpacity
+                                style={styles.changeButton}
+                                disabled={!!loadingPdf}
+                                onPress={() => handlePdf(leadId, 'invoice', 'Invoice', status)}
+                              >
+                                <Icon name="file-text" size={16} color="#723FED" />
+                                <Text style={styles.changeButtonText}>{loadingPdf === `${leadId}-invoice` ? '...' : 'Invoice'}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity
+                                style={styles.changeButton}
+                                disabled={!!loadingPdf}
+                                onPress={() => handlePdf(leadId, 'ewaybill', 'E-way Bill', status)}
+                              >
+                                <Icon name="file-text" size={16} color="#723FED" />
+                                <Text style={styles.changeButtonText}>{loadingPdf === `${leadId}-ewaybill` ? '...' : 'E-way Bill'}</Text>
+                              </TouchableOpacity>
+                            </>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })()}
                 </View>
               </ScrollView>
             )}
@@ -746,14 +890,6 @@ const OrdersScreen = ({ navigation }) => {
                             {trackingData.payment.paymentStatus || 'Pending'}
                           </Text>
                         </View>
-                        {trackingData.payment.paidAmount && (
-                          <View style={styles.infoRow}>
-                            <Text style={styles.infoLabel}>Paid Amount:</Text>
-                            <Text style={[styles.infoValue, { fontWeight: '600' }]}>
-                              ₹{trackingData.payment.paidAmount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </Text>
-                          </View>
-                        )}
                         {trackingData.payment.paymentMethod && (
                           <View style={styles.infoRow}>
                             <Text style={styles.infoLabel}>Payment Method:</Text>

@@ -169,7 +169,8 @@ export const AppProvider = ({ children }) => {
       });
 
       if (result.success) {
-        // Refresh cart items after adding - this will update cartCount automatically
+        // Refresh cart list after add-to-cart so new item appears without manual refresh (handoff §9)
+        await new Promise(r => setTimeout(r, 300));
         await fetchCartItems();
         return { success: true, message: result.message || 'Item added to cart successfully' };
       }

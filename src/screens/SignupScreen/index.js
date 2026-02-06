@@ -105,33 +105,33 @@ const SignupScreen = ({ navigation }) => {
       const result = await registerUser(userData);
       
       if (result.success) {
-        // Store tokens and user data
-        const stored = await storeTokens(
-          result.data.accessToken,
-          result.data.refreshToken,
-          result.data.user
-        );
-
-        if (stored) {
-          // Update auth context
-          login(result.data.user);
-          
+        // Customer signup may require email verification – do NOT auto-login
+        if (result.requiresVerification === true) {
           Toast.show({
             type: 'success',
-            text1: 'Success!',
-            text2: 'Account created successfully!'
+            text1: 'Verify your email',
+            text2: 'Check your email for a verification link or code.'
           });
-          
-          // Navigate to main app after storing tokens
-          setTimeout(() => {
-            navigation.navigate('MainApp');
-          }, 1500);
+          navigation.navigate('VerifyEmail', { email: formData.email.trim().toLowerCase(), phone: formData.phone.trim() });
+          return;
+        }
+
+        // Non-customer or no verification: store tokens and go to home
+        if (result.data?.accessToken && result.data?.refreshToken) {
+          const stored = await storeTokens(
+            result.data.accessToken,
+            result.data.refreshToken,
+            result.data.user
+          );
+          if (stored) {
+            login(result.data.user);
+            Toast.show({ type: 'success', text1: 'Success!', text2: 'Account created successfully!' });
+            setTimeout(() => navigation.navigate('MainApp'), 1500);
+          } else {
+            Toast.show({ type: 'error', text1: 'Signup Failed', text2: 'Failed to store authentication data' });
+          }
         } else {
-          Toast.show({
-            type: 'error',
-            text1: 'Signup Failed',
-            text2: 'Failed to store authentication data'
-          });
+          Toast.show({ type: 'error', text1: 'Signup Failed', text2: 'Unexpected response. Please try again.' });
         }
       } else {
         Toast.show({

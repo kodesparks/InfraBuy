@@ -18,6 +18,14 @@ import { useAppContext } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import styles from '../../assets/styles/payment';
 
+// Bank details for UTR / RTGS / NEFT / Cheque (handoff doc Section 6.1)
+const BANK_DETAILS = {
+  name: 'INFRAXPERT SOLUTIONS LLP',
+  accountNumber: '925020028741798',
+  ifscCode: 'UTIB0001158',
+  branch: 'LAKSHMIPURAM, GUNTUR',
+};
+
 const PaymentScreen = ({ navigation, route }) => {
   const { cartItems, clearCart } = useAppContext();
   const { user } = useAuth();
@@ -86,7 +94,7 @@ const PaymentScreen = ({ navigation, route }) => {
       id: 'rtgs',
       name: 'RTGS Transfer',
       icon: 'building',
-      description: 'Real Time Gross Settlement (₹2 lakhs+)',
+      description: 'Real Time Gross Settlement (large amounts)',
       color: '#10B981',
     },
     {
@@ -603,9 +611,17 @@ const PaymentScreen = ({ navigation, route }) => {
                     <Icon name="info" size={20} color={colors.info} />
                     <Text style={styles.infoText}>
                       {selectedPaymentMethod === 'rtgs'
-                        ? 'RTGS is available for amounts ₹2 lakhs and above. Transfer will be processed in real-time.'
+                        ? 'RTGS is available for large transfers. Transfer will be processed in real-time.'
                         : 'NEFT transfers are processed in batches throughout the day.'}
                     </Text>
+                  </View>
+
+                  <View style={styles.infoBox}>
+                    <Text style={[styles.label, { marginBottom: 4 }]}>Transfer to</Text>
+                    <Text style={styles.infoText}>{BANK_DETAILS.name}</Text>
+                    <Text style={styles.infoText}>Account: {BANK_DETAILS.accountNumber}</Text>
+                    <Text style={styles.infoText}>IFSC: {BANK_DETAILS.ifscCode}</Text>
+                    <Text style={styles.infoText}>Branch: {BANK_DETAILS.branch}</Text>
                   </View>
 
                   <View style={styles.row}>
@@ -691,8 +707,7 @@ const PaymentScreen = ({ navigation, route }) => {
                   <View style={styles.warningBox}>
                     <Icon name="alert-circle" size={20} color={colors.warning} />
                     <Text style={styles.warningText}>
-                      Please ensure the cheque is drawn in favor of our company name. Order will be
-                      processed only after cheque clearance.
+                      Draw cheque in favour of {BANK_DETAILS.name}. Order will be processed only after cheque clearance.
                     </Text>
                   </View>
 
@@ -809,28 +824,20 @@ const PaymentScreen = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Order Summary</Text>
             <View style={styles.orderSummary}>
               {displayItems.map((item, index) => {
-                const itemPrice = item.currentPrice || item.price || item.unitPrice || 0;
                 const itemQuantity = item.quantity || 1;
-                const itemTotal = item.totalPrice || item.totalCost || (itemPrice * itemQuantity);
                 return (
                   <View key={item.id || index} style={styles.orderItem}>
                     <View style={styles.orderItemInfo}>
                       <Text style={styles.orderItemName}>{item.name || 'Product'}</Text>
-                      <Text style={styles.orderItemQuantity}>
-                        Qty: {itemQuantity} × ₹{itemPrice.toLocaleString()}
-                      </Text>
+                      <Text style={styles.orderItemQuantity}>Qty: {itemQuantity}</Text>
                     </View>
-                    <Text style={styles.orderItemPrice}>
-                      ₹{itemTotal.toLocaleString()}
-                    </Text>
+                    <Text style={styles.orderItemPrice}>—</Text>
                   </View>
                 );
               })}
               <View style={styles.orderTotal}>
-                <Text style={styles.orderTotalLabel}>Total Amount:</Text>
-                <Text style={styles.orderTotalAmount}>
-                  ₹{totalAmount.toLocaleString()}
-                </Text>
+                <Text style={styles.orderTotalLabel}>Total:</Text>
+                <Text style={styles.orderTotalAmount}>—</Text>
               </View>
             </View>
           </View>
@@ -851,7 +858,7 @@ const PaymentScreen = ({ navigation, route }) => {
               {isProcessing ? (
                 <ActivityIndicator size="small" color={colors.white} />
               ) : (
-                <Text style={styles.payButtonText}>Pay ₹{totalAmount.toLocaleString()}</Text>
+                <Text style={styles.payButtonText}>Confirm Payment</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -882,6 +889,14 @@ const PaymentScreen = ({ navigation, route }) => {
                     Enter the UTR (Unique Transaction Reference) number from your bank transfer. 
                     Your order will be processed after verification.
                   </Text>
+                </View>
+
+                <View style={styles.infoBox}>
+                  <Text style={[styles.label, { marginBottom: 4 }]}>Bank account details (Transfer to)</Text>
+                  <Text style={styles.infoText}>{BANK_DETAILS.name}</Text>
+                  <Text style={styles.infoText}>Account: {BANK_DETAILS.accountNumber}</Text>
+                  <Text style={styles.infoText}>IFSC: {BANK_DETAILS.ifscCode}</Text>
+                  <Text style={styles.infoText}>Branch: {BANK_DETAILS.branch}</Text>
                 </View>
 
                 <View style={styles.inputGroup}>

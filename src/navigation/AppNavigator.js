@@ -5,6 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LoginScreen from '../screens/LoginScreen/index';
 import SignupScreen from '../screens/SignupScreen/index';
+import VerifyEmailScreen from '../screens/VerifyEmailScreen/index';
 import MainNavigator from './MainNavigator';
 import ProductListing from '../screens/ProductListing/index';
 import ProductDetail from '../screens/ProductDetail/index';
@@ -616,6 +617,7 @@ const AppNavigator = () => {
     >
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
+      <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
       <Stack.Screen name="MainApp" component={MainNavigator} />
       <Stack.Screen name="ProductListing" component={ProductListingWrapper} />
       <Stack.Screen name="ProductDetail" component={ProductDetailWrapper} />

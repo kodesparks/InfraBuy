@@ -285,9 +285,9 @@ const Cart = ({ navigation }) => {
                   <View style={styles.itemInfo}>
                     <Text style={styles.itemName} numberOfLines={2}>{item.name || 'Unknown Product'}</Text>
                     
-                    {/* Price Row */}
+                    {/* Price hidden per handoff */}
                     <View style={styles.priceRow}>
-                      <Text style={styles.itemPrice}>₹{item.currentPrice?.toLocaleString() || '0'}</Text>
+                      <Text style={styles.itemPrice}>—</Text>
                       {item._orderData?.items?.[0]?.itemCode?.units && (
                         <Text style={styles.itemUnit}>/ {item._orderData.items[0].itemCode.units}</Text>
                       )}
@@ -417,7 +417,7 @@ const Cart = ({ navigation }) => {
                   {/* Item Total - on new line */}
                   <View style={styles.itemTotal}>
                     <Text style={styles.itemTotalLabel}>Total:</Text>
-                    <Text style={styles.itemTotalAmount}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
+                    <Text style={styles.itemTotalAmount}>—</Text>
                   </View>
                 </View>
               </View>
@@ -429,11 +429,11 @@ const Cart = ({ navigation }) => {
             <View style={styles.totalsContainer}>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal:</Text>
-                <Text style={styles.totalValue}>₹{calculateSubtotal().toLocaleString()}</Text>
+                <Text style={styles.totalValue}>—</Text>
               </View>
               <View style={[styles.totalRow, styles.grandTotalRow]}>
                 <Text style={styles.grandTotalLabel}>Grand Total:</Text>
-                <Text style={styles.grandTotalAmount}>₹{total.toLocaleString()}</Text>
+                <Text style={styles.grandTotalAmount}>—</Text>
               </View>
             </View>
           )}

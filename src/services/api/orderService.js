@@ -1,4 +1,4 @@
-import { apiClient, API_ENDPOINTS, buildUrl } from './config';
+import { apiClient, API_ENDPOINTS, buildUrl, API_CONFIG } from './config';
 
 /**
  * Order Service - Handles all order-related API calls
@@ -293,6 +293,70 @@ export const orderService = {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load payment status. Please try again.',
         data: null,
+      };
+    }
+  },
+
+  /**
+   * Order PDF: show only one at a time (handoff §3).
+   * Order Accepted (vendor_accepted) → Quote only.
+   * Order confirmed / payment (order_confirmed, payment_done, truck_loading, shipped) → Sales Order only.
+   * Delivery (in_transit, out_for_delivery, delivered) → Invoice + E-way only.
+   */
+
+  /**
+   * Get full URL for order PDF (for use with download util that needs auth header).
+   * quote: Shown at vendor_accepted only. May 404 while generating; 404 when order_placed/pending → "Quote is generated when the order is confirmed."
+   * sales-order: Shown from order_confirmed through shipped (no Quote shown with it).
+   * invoice / ewaybill: Shown in delivery stage only (in_transit, out_for_delivery, delivered).
+   * @param {string} leadId - Order ID
+   * @param {'quote'|'sales-order'|'invoice'|'ewaybill'} type - PDF type
+   * @returns {string|null} Full URL or null if invalid type
+   */
+  getPdfUrl(leadId, type) {
+    const endpointMap = {
+      'quote': API_ENDPOINTS.orders.pdfQuote,
+      'sales-order': API_ENDPOINTS.orders.pdfSalesOrder,
+      'invoice': API_ENDPOINTS.orders.pdfInvoice,
+      'ewaybill': API_ENDPOINTS.orders.pdfEwaybill,
+    };
+    const ep = endpointMap[type];
+    if (!ep) return null;
+    const path = buildUrl(ep.url, { leadId });
+    const base = API_CONFIG?.BASE_URL || API_CONFIG?.baseUrl || '';
+    return base ? `${base.replace(/\/$/, '')}${path.startsWith('/') ? path : '/' + path}` : null;
+  },
+
+  /**
+   * Download order PDF (legacy blob response). Prefer getPdfUrl + downloadAndOpenPdf for save/open on device.
+   * Quote: shown at vendor_accepted; may 404 (show message by order status).
+   * Sales Order: order_confirmed through shipped. Invoice / E-way: delivery stage only.
+   * @param {string} leadId - Order ID
+   * @param {'quote'|'sales-order'|'invoice'|'ewaybill'} type - PDF type
+   * @returns {Promise<{ success: boolean, blob?: Blob, error?: string, is404?: boolean }>}
+   */
+  async getPdf(leadId, type) {
+    const endpointMap = {
+      'quote': API_ENDPOINTS.orders.pdfQuote,
+      'sales-order': API_ENDPOINTS.orders.pdfSalesOrder,
+      'invoice': API_ENDPOINTS.orders.pdfInvoice,
+      'ewaybill': API_ENDPOINTS.orders.pdfEwaybill,
+    };
+    const ep = endpointMap[type];
+    if (!ep) return { success: false, error: 'Invalid PDF type' };
+    try {
+      const url = buildUrl(ep.url, { leadId });
+      const response = await apiClient.get(url, { responseType: 'blob' });
+      if (response.data && response.status === 200) {
+        return { success: true, blob: response.data };
+      }
+      return { success: false, error: 'Download failed' };
+    } catch (error) {
+      const is404 = error.response?.status === 404;
+      return {
+        success: false,
+        error: error.response?.data?.message || (is404 ? 'Document not ready' : 'Download failed'),
+        is404,
       };
     }
   },
