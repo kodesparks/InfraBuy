@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { WAREHOUSE_LOCATIONS, PRODUCT_CATEGORY_MAPPING } from '../services/config/warehouseConfig';
 import { distanceService } from '../services/location/distanceService';
 import { cartService } from '../services/api/cartService';
+import { useAuth } from './AuthContext';
 
 const AppContext = createContext();
 
@@ -18,12 +19,15 @@ export const AppProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [cartCount, setCartCount] = useState(0);
   const [notificationCount, setNotificationCount] = useState(3);
-  
+
   // Delivery and location state
   const [userPincode, setUserPincode] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [deliveryInfo, setDeliveryInfo] = useState({});
   const [showPincodeModal, setShowPincodeModal] = useState(false);
+
+  // Auth state
+  const { isLoggedIn } = useAuth();
 
   // Load saved pincode on app start
   useEffect(() => {
@@ -34,7 +38,7 @@ export const AppProvider = ({ children }) => {
     try {
       const savedPincode = await AsyncStorage.getItem('userPincode');
       const savedLocation = await AsyncStorage.getItem('userLocation');
-      
+
       if (savedPincode && savedLocation) {
         setUserPincode(savedPincode);
         setUserLocation(JSON.parse(savedLocation));
@@ -52,16 +56,16 @@ export const AppProvider = ({ children }) => {
   const calculateDeliveryInfo = (location) => {
     try {
       const deliveryData = {};
-      
+
       Object.keys(WAREHOUSE_LOCATIONS).forEach(category => {
         const warehouse = WAREHOUSE_LOCATIONS[category];
         const distance = distanceService.calculateDistance(location, warehouse.location);
         const deliveryCharges = distanceService.calculateDeliveryCharges(
-          distance, 
-          category, 
+          distance,
+          category,
           warehouse
         );
-        
+
         deliveryData[category] = {
           warehouse: warehouse.name,
           distance: distance,
@@ -69,7 +73,7 @@ export const AppProvider = ({ children }) => {
           deliveryTime: getDeliveryTimeEstimate(distance),
         };
       });
-      
+
       setDeliveryInfo(deliveryData);
     } catch (error) {
       console.error('Error calculating delivery info:', error);
@@ -87,13 +91,13 @@ export const AppProvider = ({ children }) => {
   const handlePincodeSet = async (pincodeData) => {
     try {
       const { pincode, location } = pincodeData;
-      
+
       // Validate location data before saving
       if (!location || !location.latitude || !location.longitude) {
         console.error('Invalid location data:', location);
         throw new Error('Invalid location data received. Please try again.');
       }
-      
+
       // Prepare location object with required fields
       const locationToSave = {
         latitude: location.latitude,
@@ -104,11 +108,11 @@ export const AppProvider = ({ children }) => {
         district: location.district,
         region: location.region,
       };
-      
+
       // Save to AsyncStorage
       await AsyncStorage.setItem('userPincode', pincode);
       await AsyncStorage.setItem('userLocation', JSON.stringify(locationToSave));
-      
+
       // Update state
       setUserPincode(pincode);
       setUserLocation(locationToSave);
@@ -132,14 +136,14 @@ export const AppProvider = ({ children }) => {
   const calculateProductPrice = (basePrice, categoryName, quantity = 1) => {
     const categoryKey = PRODUCT_CATEGORY_MAPPING[categoryName];
     const deliveryData = deliveryInfo[categoryKey];
-    
+
     if (!deliveryData) {
       return basePrice * quantity;
     }
-    
+
     return distanceService.calculateTotalPrice(
-      basePrice, 
-      deliveryData.deliveryCharges, 
+      basePrice,
+      deliveryData.deliveryCharges,
       quantity
     );
   };
@@ -169,9 +173,12 @@ export const AppProvider = ({ children }) => {
       });
 
       if (result.success) {
-        // Refresh cart list after add-to-cart so new item appears without manual refresh (handoff §9)
-        await new Promise(r => setTimeout(r, 300));
-        await fetchCartItems();
+        // Optimistically increment cart count immediately for instant UI feedback
+        setCartCount(prev => prev + quantity);
+        
+        // Refresh complete cart list from API in background without blocking the UI flow
+        fetchCartItems().catch(err => console.error('Error syncing cart in background:', err));
+        
         return { success: true, message: result.message || 'Item added to cart successfully' };
       }
 
@@ -184,22 +191,35 @@ export const AppProvider = ({ children }) => {
 
   // Fetch cart items from API
   const fetchCartItems = async () => {
+    if (!isLoggedIn) {
+      setCartItems([]);
+      setCartCount(0);
+      return { success: true, items: [] };
+    }
+
     try {
-      const result = await cartService.getCartItems({ page: 1, limit: 50 });
-      
+      // Add timestamp to query to prevent server caching
+      const result = await cartService.getCartItems({ 
+        page: 1, 
+        limit: 50,
+        _t: Date.now() 
+      });
+
       if (result.success && result.data) {
         const orders = result.data.orders || [];
-        
-        const cartItems = orders
-          .map(order => {
-            const transformed = cartService.transformOrderToCartItem(order);
-            if (!transformed) {
-              console.warn('⚠️ Failed to transform order:', order);
-            }
-            return transformed;
-          })
-          .filter(item => item !== null);
-        
+
+        const cartItems = [];
+        orders.forEach(order => {
+          const transformed = cartService.transformOrderToCartItem(order);
+          if (Array.isArray(transformed)) {
+            cartItems.push(...transformed);
+          } else if (transformed) {
+            cartItems.push(transformed);
+          } else {
+            console.warn('⚠️ Failed to transform order:', order);
+          }
+        });
+
         setCartItems(cartItems);
         const totalCount = cartItems.reduce((total, item) => total + (item.quantity || 0), 0);
         setCartCount(totalCount);
@@ -220,7 +240,7 @@ export const AppProvider = ({ children }) => {
     if (newQuantity <= 0) {
       return await removeFromCart(leadId);
     }
-    
+
     try {
       const result = await cartService.updateQuantity(leadId, {
         itemCode: itemCode,
@@ -240,12 +260,24 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const removeFromCart = async (leadId) => {
+  /**
+   * Remove item from cart
+   * @param {string} leadId - Order ID or Lead ID
+   * @param {string} itemCode - Technical Product ID (itemCode)
+   */
+  const removeFromCart = async (leadId, itemCode) => {
     try {
-      const result = await cartService.removeFromCart(leadId);
+      const result = await cartService.removeFromCart(leadId, itemCode);
 
       if (result.success) {
-        // Refresh cart items after removal - this will update cartCount automatically
+        // OPTIMISTIC UI: Remove item from local state immediately
+        setCartItems(prevItems => prevItems.filter(item => 
+          !(item.leadId === leadId && item.itemCode === itemCode) &&
+          !(item.id === leadId && item.itemCode === itemCode)
+        ));
+        setCartCount(prev => Math.max(0, prev - 1));
+
+        // Refresh cart items from API after removal - this will sync state with server
         await fetchCartItems();
         return { success: true, message: result.message || 'Item removed from cart successfully' };
       }
@@ -268,8 +300,8 @@ export const AppProvider = ({ children }) => {
         setCartCount(0);
         // Refresh from API to ensure consistency
         await fetchCartItems();
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: result.message || 'Cart cleared successfully',
           clearedCount: result.clearedCount || 0,
           ordersCleared: result.ordersCleared || [],
@@ -310,7 +342,7 @@ export const AppProvider = ({ children }) => {
     addNotification,
     clearNotifications,
     markNotificationAsRead,
-    
+
     // Delivery and location state
     userPincode,
     userLocation,
@@ -329,3 +361,5 @@ export const AppProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
+
+

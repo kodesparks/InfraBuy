@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-toast-message';
@@ -16,8 +17,11 @@ import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { registerUser } from '../../services/api';
 import { storeTokens } from '../../services/auth/tokenManager';
 import { useAuth } from '../../context/AuthContext';
+import Icon from 'react-native-vector-icons/Feather';
+import { useTranslation } from 'react-i18next';
 
 const SignupScreen = ({ navigation }) => {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,10 +30,12 @@ const SignupScreen = ({ navigation }) => {
     address: '',
     pincode: '',
     companyName: '',
+    gstNumber: '',
     contractId: ''
   });
-  
+
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   // Basic validation
@@ -37,48 +43,48 @@ const SignupScreen = ({ navigation }) => {
     if (!formData.name.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your full name'
+        text1: t('Validation Error'),
+        text2: t('Please enter your full name')
       });
       return false;
     }
     if (!formData.email.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your email'
+        text1: t('Validation Error'),
+        text2: t('Please enter your email')
       });
       return false;
     }
     if (!formData.phone.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your phone number'
+        text1: t('Validation Error'),
+        text2: t('Please enter your phone number')
       });
       return false;
     }
     if (!formData.password) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter a password'
+        text1: t('Validation Error'),
+        text2: t('Please enter a password')
       });
       return false;
     }
     if (!formData.address.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your address'
+        text1: t('Validation Error'),
+        text2: t('Please enter your address')
       });
       return false;
     }
     if (!formData.pincode.trim()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your pincode'
+        text1: t('Validation Error'),
+        text2: t('Please enter your pincode')
       });
       return false;
     }
@@ -99,18 +105,19 @@ const SignupScreen = ({ navigation }) => {
         address: formData.address.trim(),
         pincode: formData.pincode.trim(),
         companyName: formData.companyName.trim(),
+        gstNumber: formData.gstNumber.trim(),
         contractId: formData.contractId.trim()
       };
 
       const result = await registerUser(userData);
-      
+
       if (result.success) {
         // Customer signup may require email verification – do NOT auto-login
         if (result.requiresVerification === true) {
           Toast.show({
             type: 'success',
-            text1: 'Verify your email',
-            text2: 'Check your email for a verification link or code.'
+            text1: t('Verify your email'),
+            text2: t('Check your email for a verification link or code.')
           });
           navigation.navigate('VerifyEmail', { email: formData.email.trim().toLowerCase(), phone: formData.phone.trim() });
           return;
@@ -125,26 +132,26 @@ const SignupScreen = ({ navigation }) => {
           );
           if (stored) {
             login(result.data.user);
-            Toast.show({ type: 'success', text1: 'Success!', text2: 'Account created successfully!' });
+            Toast.show({ type: 'success', text1: t('Success!'), text2: t('Account created successfully!') });
             setTimeout(() => navigation.navigate('MainApp'), 1500);
           } else {
-            Toast.show({ type: 'error', text1: 'Signup Failed', text2: 'Failed to store authentication data' });
+            Toast.show({ type: 'error', text1: t('Signup Failed'), text2: t('Failed to store authentication data') });
           }
         } else {
-          Toast.show({ type: 'error', text1: 'Signup Failed', text2: 'Unexpected response. Please try again.' });
+          Toast.show({ type: 'error', text1: t('Signup Failed'), text2: t('Unexpected response. Please try again.') });
         }
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Signup Failed',
-          text2: result.error?.message || 'Failed to create account'
+          text1: t('Signup Failed'),
+          text2: result.error?.message || t('Failed to create account')
         });
       }
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Something went wrong. Please try again.'
+        text1: t('Error'),
+        text2: t('Something went wrong. Please try again.')
       });
     } finally {
       setIsLoading(false);
@@ -152,35 +159,39 @@ const SignupScreen = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
-        colors={['#723FED', '#3B58EB']}
+        colors={colors.primaryGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.gradient}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Logo Section */}
           <View style={styles.logoSection}>
-            <Text style={styles.logo}>infraXpert</Text>
-            <Text style={styles.tagline}>Building Materials Expert</Text>
+            <Image
+              source={require('../../assets/images/logo_new.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.tagline}>{t('Building Materials Expert')}</Text>
           </View>
 
           {/* Signup Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Create Account</Text>
-            
+            <Text style={styles.title}>{t('Create Account')}</Text>
+
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Full Name"
+                placeholder={t('Full Name')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.name}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, name: value }))}
@@ -188,12 +199,12 @@ const SignupScreen = ({ navigation }) => {
                 editable={!isLoading}
               />
             </View>
-            
+
             {/* Company Name Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Company Name (Optional)"
+                placeholder={t('Company Name (Optional)')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.companyName}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, companyName: value }))}
@@ -201,12 +212,26 @@ const SignupScreen = ({ navigation }) => {
                 editable={!isLoading}
               />
             </View>
-            
+
+            {/* GST Number Input */}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder={t('GST Number (Optional)')}
+                placeholderTextColor="rgba(255, 255, 255, 0.8)"
+                value={formData.gstNumber}
+                onChangeText={(value) => setFormData(prev => ({ ...prev, gstNumber: value }))}
+                autoCapitalize="characters"
+                maxLength={15}
+                editable={!isLoading}
+              />
+            </View>
+
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Email address"
+                placeholder={t('Email address')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.email}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, email: value }))}
@@ -215,12 +240,12 @@ const SignupScreen = ({ navigation }) => {
                 editable={!isLoading}
               />
             </View>
-            
+
             {/* Phone Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Phone number (10 digits)"
+                placeholder={t('Phone number (10 digits)')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.phone}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, phone: value }))}
@@ -234,7 +259,7 @@ const SignupScreen = ({ navigation }) => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Address"
+                placeholder={t('Address')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.address}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, address: value }))}
@@ -248,7 +273,7 @@ const SignupScreen = ({ navigation }) => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Pincode"
+                placeholder={t('Pincode')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.pincode}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, pincode: value }))}
@@ -262,45 +287,52 @@ const SignupScreen = ({ navigation }) => {
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder="Contract ID"
+                placeholder={t('Contract ID')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.contractId}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, contractId: value }))}
                 editable={!isLoading}
               />
             </View>
-            
+
             {/* Password Input */}
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, styles.passwordContainer]}>
               <TextInput
-                style={styles.input}
-                placeholder="Password"
+                style={styles.passwordInput}
+                placeholder={t('Password')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.password}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, password: value }))}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 editable={!isLoading}
               />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+              >
+                <Icon name={showPassword ? "eye" : "eye-off"} size={20} color="rgba(255, 255, 255, 0.8)" />
+              </TouchableOpacity>
             </View>
 
             {/* Signup Button */}
-            <TouchableOpacity 
-              style={[styles.signupButton, isLoading && styles.signupButtonDisabled]} 
+            <TouchableOpacity
+              style={[styles.signupButton, isLoading && styles.signupButtonDisabled]}
               onPress={handleSignup}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#3B58EB" />
               ) : (
-                <Text style={styles.signupButtonText}>Create Account</Text>
+                <Text style={styles.signupButtonText}>{t('Create Account')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
+              <Text style={styles.loginText}>{t('Already have an account? ')}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
-                <Text style={styles.loginLink}>Sign In</Text>
+                <Text style={styles.loginLink}>{t('Sign In')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -308,7 +340,7 @@ const SignupScreen = ({ navigation }) => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Trusted by construction professionals across India
+              {t('Trusted by construction professionals across India')}
             </Text>
           </View>
         </ScrollView>
@@ -333,16 +365,14 @@ const styles = StyleSheet.create({
   logoSection: {
     alignItems: 'center',
   },
-  logo: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: colors.white,
-    fontStyle: 'italic',
-    marginBottom: 8,
+  logoImage: {
+    height: 38,
+    width: 170,
+    marginBottom: spacing.xs,
   },
   tagline: {
     fontSize: 16,
-    color: colors.white,
+    color: '#ffffff',
     opacity: 0.9,
   },
   formContainer: {
@@ -356,7 +386,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -370,10 +400,27 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 0,
-    color: colors.white,
+    color: '#ffffff',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    borderWidth: 0,
+    color: '#ffffff',
+  },
+  eyeIcon: {
+    padding: 14,
   },
   signupButton: {
-    backgroundColor: colors.white,
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -393,11 +440,11 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   loginText: {
-    color: colors.white,
+    color: '#ffffff',
     fontSize: 14,
   },
   loginLink: {
-    color: colors.white,
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -412,3 +459,5 @@ const styles = StyleSheet.create({
 });
 
 export default SignupScreen;
+
+

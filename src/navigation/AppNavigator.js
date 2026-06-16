@@ -1,11 +1,15 @@
 import React from 'react';
+import { colors as staticColors } from '../assets/styles/global';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, TouchableOpacity, Text, Image, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, Text, Image } from 'react-native';
+import Skeleton from '../components/common/Skeleton';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LoginScreen from '../screens/LoginScreen/index';
 import SignupScreen from '../screens/SignupScreen/index';
 import VerifyEmailScreen from '../screens/VerifyEmailScreen/index';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen/index';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen/index';
 import MainNavigator from './MainNavigator';
 import ProductListing from '../screens/ProductListing/index';
 import ProductDetail from '../screens/ProductDetail/index';
@@ -15,446 +19,137 @@ import NotificationsScreen from '../screens/NotificationsScreen/index';
 import ChatScreen from '../screens/ChatScreen/index';
 import SupportScreen from '../screens/SupportScreen/index';
 import TrackingScreen from '../screens/TrackingScreen/index';
-import DeliveryDetails from '../screens/DeliveryDetails/index';
 import PaymentScreen from '../screens/PaymentScreen/index';
 import AppHeader from '../components/common/AppHeader';
+import FloatingTabBar from '../components/common/FloatingTabBar';
+import CartFloatingPill from '../components/common/CartFloatingPill';
 import { useAuth } from '../context/AuthContext';
 import { useAppContext } from '../context/AppContext';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../context/ThemeContext';
 
 const Stack = createStackNavigator();
 
 // Wrapper components for screens that need AppHeader
 const CartScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="Cart"
+        title={t("Enquiry")}
         showBack={true}
         cartCount={cartCount}
       />
       <Cart navigation={navigation} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-      </View>
     </View>
   );
 };
 
 const ProfileScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="Profile"
+        title={t("Profile")}
         showBack={true}
         cartCount={cartCount}
       />
       <ProfileScreen navigation={navigation} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-      </View>
+      <FloatingTabBar navigation={navigation} />
     </View>
   );
 };
 
 const NotificationsScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="Notifications"
+        title={t("Notifications")}
         showBack={true}
         cartCount={cartCount}
       />
       <NotificationsScreen navigation={navigation} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-        </LinearGradient>
-      </View>
+      <FloatingTabBar navigation={navigation} />
     </View>
   );
 };
 
 const ProductDetailWrapper = ({ navigation, route }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title={route.params?.product?.name || "Product Details"}
+        title={route.params?.product?.name || t("Product Details")}
         showBack={true}
         cartCount={cartCount}
       />
       <ProductDetail navigation={navigation} route={route} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-        </LinearGradient>
-      </View>
+      <FloatingTabBar navigation={navigation} />
+      <CartFloatingPill 
+        navigation={navigation} 
+        isVisible={true} 
+      />
     </View>
   );
 };
 
 const ProductListingWrapper = ({ navigation, route }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title={route.params?.category?.name || "Products"}
+        title={route.params?.category?.name || t("Products")}
         showBack={true}
         cartCount={cartCount}
       />
-    <ProductListing navigation={navigation} route={route} />
-    {/* Bottom Navigation Bar */}
-    <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity 
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-        </LinearGradient>
-      </View>
+      <ProductListing navigation={navigation} route={route} />
+      <FloatingTabBar navigation={navigation} />
+      <CartFloatingPill 
+        navigation={navigation} 
+        isVisible={true} 
+      />
     </View>
   );
 };
 
 const ChatScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="Customer Support"
+        title={t("Customer Support")}
         showBack={true}
         cartCount={cartCount}
       />
       <ChatScreen navigation={navigation} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-      </View>
-    </View>
-  );
-};
-
-const DeliveryDetailsWrapper = ({ navigation }) => {
-  const { cartCount } = useAppContext();
-  return (
-    <View style={{ flex: 1 }}>
-      <AppHeader 
-        navigation={navigation}
-        title="Delivery Details"
-        showBack={true}
-        cartCount={cartCount}
-      />
-      <DeliveryDetails navigation={navigation} />
+      <FloatingTabBar navigation={navigation} />
     </View>
   );
 };
 
 const PaymentScreenWrapper = ({ navigation, route }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
       <PaymentScreen navigation={navigation} route={route} />
@@ -464,148 +159,53 @@ const PaymentScreenWrapper = ({ navigation, route }) => {
 
 const TrackingScreenWrapper = ({ navigation, route }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="Track Order"
+        title={t("Track Order")}
         showBack={true}
         cartCount={cartCount}
       />
       <TrackingScreen navigation={navigation} route={route} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-      backgroundColor: 'transparent',
-      borderTopWidth: 0,
-    }}>
-      <LinearGradient
-        colors={['#723FED', '#3B58EB']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={{ flex: 1, borderRadius: 0 }}
-      >
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-around',
-          alignItems: 'center',
-          height: '100%',
-        }}>
-          <TouchableOpacity
-            style={{
-              alignItems: 'center',
-              paddingVertical: 8,
-              paddingHorizontal: 16,
-              borderRadius: 20,
-              backgroundColor: 'rgba(255, 255, 255, 0.2)',
-            }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-          >
-            <Icon name="home" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-          >
-            <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{ alignItems: 'center' }}
-            onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-          >
-            <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-            <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
-      </View>
+      <FloatingTabBar navigation={navigation} />
     </View>
   );
 };
 
 const SupportScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
+  const { t } = useTranslation();
+  const { colors } = useTheme();
   return (
     <View style={{ flex: 1 }}>
       <SupportScreen navigation={navigation} />
-      {/* Bottom Navigation Bar */}
-      <View style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 60,
-        backgroundColor: 'transparent',
-        borderTopWidth: 0,
-      }}>
-        <LinearGradient
-          colors={['#723FED', '#3B58EB']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ flex: 1, borderRadius: 0 }}
-        >
-          <View style={{
-            flexDirection: 'row',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            height: '100%',
-          }}>
-            <TouchableOpacity
-              style={{
-                alignItems: 'center',
-                paddingVertical: 8,
-                paddingHorizontal: 16,
-                borderRadius: 20,
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              }}
-              onPress={() => navigation.navigate('MainApp', { screen: 'Home' })}
-            >
-              <Icon name="home" size={24} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Home</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{ alignItems: 'center' }}
-              onPress={() => navigation.navigate('MainApp', { screen: 'Orders' })}
-            >
-              <Icon name="document-text-outline" size={24} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Orders</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={{ alignItems: 'center' }}
-              onPress={() => navigation.navigate('MainApp', { screen: 'Updates' })}
-            >
-              <Icon name="chatbubble-outline" size={24} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '600', marginTop: 2 }}>Updates</Text>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      </View>
+      <FloatingTabBar navigation={navigation} />
     </View>
   );
 };
 
 const AppNavigator = () => {
   const { isLoggedIn, isLoading } = useAuth();
+  const { isDarkMode } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#723FED' }}>
-        <Image 
-          source={require('../assets/images/logo.png')} 
-          style={{ width: 200, height: 200, marginBottom: 20 }}
-          resizeMode="contain"
-        />
-        <ActivityIndicator size="large" color="#FFFFFF" />
+      <View style={{ flex: 1, backgroundColor: isDarkMode ? '#0F1115' : '#F9F9F9' }}>
+        <View style={{ padding: 20, paddingTop: 100 }}>
+          <Skeleton width="100%" height={200} borderRadius={24} style={{ marginBottom: 20 }} />
+          <Skeleton width="60%" height={30} borderRadius={6} style={{ marginBottom: 40 }} />
+          
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <View key={i} style={{ width: '31%', marginBottom: 20 }}>
+                <Skeleton width="100%" height={120} borderRadius={16} />
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
     );
   }
@@ -618,11 +218,12 @@ const AppNavigator = () => {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
       <Stack.Screen name="MainApp" component={MainNavigator} />
       <Stack.Screen name="ProductListing" component={ProductListingWrapper} />
       <Stack.Screen name="ProductDetail" component={ProductDetailWrapper} />
       <Stack.Screen name="Cart" component={CartScreenWrapper} />
-      <Stack.Screen name="DeliveryDetails" component={DeliveryDetailsWrapper} />
       <Stack.Screen name="Payment" component={PaymentScreenWrapper} />
       <Stack.Screen name="Profile" component={ProfileScreenWrapper} />
       <Stack.Screen name="Notifications" component={NotificationsScreenWrapper} />
@@ -634,3 +235,6 @@ const AppNavigator = () => {
 };
 
 export default AppNavigator;
+
+
+

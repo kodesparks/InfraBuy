@@ -14,7 +14,7 @@ export const ORDER_STATUS_CONFIG = {
     showPayNow: false,
   },
   order_placed: {
-    label: 'Order Placed',
+    label: 'Enquiry Submitted',
     color: '#F97316',
     backgroundColor: '#FFEDD5',
     description: 'Order placed, awaiting vendor confirmation',
@@ -24,13 +24,15 @@ export const ORDER_STATUS_CONFIG = {
   vendor_accepted: {
     label: 'Order Accepted',
     color: '#3B82F6',
+    isGradient: true,
+    gradientColors: ['#F97316', '#10B981'], // Orange and Green
     backgroundColor: '#DBEAFE',
     description: 'Order accepted - Payment required',
     trackable: false,
     showPayNow: true,
   },
   payment_done: {
-    label: 'Payment Completed',
+    label: 'Payment Under Verification',
     color: '#8B5CF6',
     backgroundColor: '#EDE9FE',
     description: 'Payment processed successfully',
@@ -99,8 +101,24 @@ export const ORDER_STATUS_CONFIG = {
 /**
  * Get status configuration for a given status
  */
-export const getStatusConfig = (status) => {
+export const getStatusConfig = (status, paymentStatus) => {
   const normalizedStatus = (status || '').toLowerCase();
+
+  // Logical Status Override:
+  // 1. If payment is successful, it's logically "Order Confirmed" regardless of raw status
+  // (unless it's already further along like shipped/delivered)
+  if (paymentStatus === 'successful' && !['shipped', 'in_transit', 'out_for_delivery', 'delivered'].includes(normalizedStatus)) {
+    return ORDER_STATUS_CONFIG['order_confirmed'];
+  }
+
+  // 2. If order is confirmed or accepted but payment is submitted but not yet successful,
+  // it's "Payment Under Verification"
+  if ((normalizedStatus === 'order_confirmed' || normalizedStatus === 'vendor_accepted' || normalizedStatus === 'payment_done') &&
+    paymentStatus !== 'pending' &&
+    paymentStatus !== 'successful') {
+    return ORDER_STATUS_CONFIG['payment_done'];
+  }
+
   return ORDER_STATUS_CONFIG[normalizedStatus] || {
     label: status || 'Unknown',
     color: '#6B7280',
@@ -114,8 +132,8 @@ export const getStatusConfig = (status) => {
 /**
  * Check if status is trackable
  */
-export const isTrackableStatus = (status) => {
-  const config = getStatusConfig(status);
+export const isTrackableStatus = (status, paymentStatus) => {
+  const config = getStatusConfig(status, paymentStatus);
   return config.trackable;
 };
 
@@ -123,6 +141,9 @@ export const isTrackableStatus = (status) => {
  * Check if order should show Pay Now button
  */
 export const shouldShowPayNow = (status, paymentStatus) => {
+  if (status === 'vendor_accepted' && paymentStatus !== 'pending') {
+    return false;
+  }
   const config = getStatusConfig(status);
   return config.showPayNow || (status === 'vendor_accepted' && paymentStatus === 'pending');
 };
@@ -143,15 +164,17 @@ export const TRACKABLE_STATUSES = [
  * Order status flow for timeline
  */
 export const STATUS_FLOW = [
-  { status: 'order_placed', label: 'Order Placed', icon: 'package' },
+  { status: 'order_placed', label: 'Enquiry Submitted', icon: 'package' },
   { status: 'vendor_accepted', label: 'Vendor Verifying', icon: 'search' },
   { status: 'vendor_accepted', label: 'Order Accepted', icon: 'check-circle' },
   { status: 'vendor_accepted', label: 'Payment Required', icon: 'credit-card' },
-  { status: 'payment_done', label: 'Payment Done', icon: 'check-circle' },
+  { status: 'payment_done', label: 'Payment Under Verification', icon: 'check-circle' },
   { status: 'order_confirmed', label: 'Order Confirmed', icon: 'check-circle' },
   { status: 'shipped', label: 'Shipped', icon: 'package' },
   { status: 'in_transit', label: 'In Transit', icon: 'truck' },
   { status: 'out_for_delivery', label: 'Out for Delivery', icon: 'truck' },
   { status: 'delivered', label: 'Delivered', icon: 'check-circle' },
 ];
+
+
 

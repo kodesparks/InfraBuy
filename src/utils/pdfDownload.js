@@ -15,17 +15,10 @@ export async function downloadAndOpenPdf(fullUrl, token, filename = 'document') 
   const pdfFilename = `${safeName}.pdf`;
 
   try {
+    // Do not use DownloadManager because it drops Authorization headers on Android 10+
     const options = {
       fileCache: true,
       appendExt: 'pdf',
-      addAndroidDownloads: Platform.OS === 'android' ? {
-        useDownloadManager: true,
-        notification: true,
-        title: pdfFilename,
-        description: `${filename} PDF`,
-        mime: 'application/pdf',
-        mediaScannable: true,
-      } : undefined,
     };
 
     const response = await ReactNativeBlobUtil.config(options).fetch('GET', fullUrl, {
@@ -42,7 +35,7 @@ export async function downloadAndOpenPdf(fullUrl, token, filename = 'document') 
           const j = JSON.parse(text);
           return j?.message || null;
         }
-      } catch (_) {}
+      } catch (_) { }
       return null;
     };
     if (status === 404) {
@@ -59,12 +52,27 @@ export async function downloadAndOpenPdf(fullUrl, token, filename = 'document') 
       return { success: false, error: 'Download failed' };
     }
 
-    if (Platform.OS === 'android' && ReactNativeBlobUtil.android?.actionViewIntent) {
+    if (Platform.OS === 'android') {
+      // Copy to public Downloads folder so the user can easily find it later
       try {
-        await ReactNativeBlobUtil.android.actionViewIntent(path, 'application/pdf', `Open ${filename}`);
-        return { success: true, opened: true };
-      } catch (openErr) {
-        return { success: true, opened: false };
+        if (ReactNativeBlobUtil.MediaCollection?.copyToMediaStore) {
+          await ReactNativeBlobUtil.MediaCollection.copyToMediaStore({
+            name: pdfFilename,
+            parentFolder: '',
+            mimeType: 'application/pdf'
+          }, 'Download', path);
+        }
+      } catch (err) {
+        console.log('Not able to copy to MediaStore:', err);
+      }
+
+      if (ReactNativeBlobUtil.android?.actionViewIntent) {
+        try {
+          await ReactNativeBlobUtil.android.actionViewIntent(path, 'application/pdf', `Open ${filename}`);
+          return { success: true, opened: true };
+        } catch (openErr) {
+          return { success: true, opened: false };
+        }
       }
     }
 
@@ -89,3 +97,5 @@ export async function downloadAndOpenPdf(fullUrl, token, filename = 'document') 
     };
   }
 }
+
+

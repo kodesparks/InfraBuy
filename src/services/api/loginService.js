@@ -8,20 +8,33 @@ import { API_ENDPOINTS } from './config';
 export const loginUser = async (credentials) => {
   try {
     const response = await createResource(API_ENDPOINTS.auth.login.url, credentials);
-    
-    // Handle the new API response structure
+
+    // Handle the new API response structure where tokens and user are at the root of response.data
     if (response.success && response.data) {
-      return {
-        success: true,
-        data: {
-          user: response.data.user,
-          accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
-          message: response.data.message
-        }
-      };
+      if (response.data.user && response.data.accessToken) {
+        return {
+          success: true,
+          data: {
+            user: response.data.user,
+            accessToken: response.data.accessToken,
+            refreshToken: response.data.refreshToken,
+            message: response.data.message
+          }
+        };
+      } else if (response.data.data && response.data.data.user) {
+        // Fallback in case it's nested
+        return {
+          success: true,
+          data: {
+            user: response.data.data.user,
+            accessToken: response.data.data.accessToken,
+            refreshToken: response.data.data.refreshToken,
+            message: response.data.message
+          }
+        };
+      }
     }
-    
+
     return response;
   } catch (error) {
     return {
@@ -47,10 +60,10 @@ export const logoutUser = async (refreshToken) => {
   try {
     // Call backend logout
     const result = await createResource(API_ENDPOINTS.auth.logout.url, { refreshToken });
-    
+
     // Clear local tokens regardless of backend response
     await clearTokens();
-    
+
     return {
       success: true,
       message: 'Logged out successfully'
@@ -64,3 +77,5 @@ export const logoutUser = async (refreshToken) => {
     };
   }
 };
+
+

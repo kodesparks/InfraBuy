@@ -43,7 +43,7 @@ export default StyleSheet.create({
     paddingVertical: 0,
   },
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
@@ -95,3 +95,6 @@ export default StyleSheet.create({
     color: colors.primary,
   },
 });
+
+
+

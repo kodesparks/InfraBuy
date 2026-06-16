@@ -1,13 +1,14 @@
 import axios from 'axios';
+import { REACT_APP_API_URL } from '../../env';
 import { getAccessToken, getRefreshToken, storeTokens, clearTokens, getUserData } from '../auth/tokenManager';
 import { refreshToken } from './loginService';
 import { navigateToLogin } from '../navigation/navigationService';
 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: 'https://api.infraxpert.in',
+  baseUrl: REACT_APP_API_URL || 'https://api.infraxpert.in',
   apiVersion: 'v1',
-  BASE_URL: 'https://api.infraxpert.in', // Keep for backward compatibility
+  BASE_URL: REACT_APP_API_URL || 'https://api.infraxpert.in', // Keep for backward compatibility
   TIMEOUT: 30000,
   timeout: 30000,
   defaultHeaders: {
@@ -54,6 +55,21 @@ export const API_ENDPOINTS = {
     },
     forgotPassword: {
       url: '/api/auth/forgot-password',
+      method: 'POST',
+      requiresAuth: false,
+    },
+    forgotPasswordMobile: {
+      url: '/api/auth/forgot-password-mobile',
+      method: 'POST',
+      requiresAuth: false,
+    },
+    verifyForgotOtp: {
+      url: '/api/auth/verify-forgot-otp',
+      method: 'POST',
+      requiresAuth: false,
+    },
+    resetPassword: {
+      url: '/api/auth/reset-password',
       method: 'POST',
       requiresAuth: false,
     },
@@ -271,12 +287,12 @@ export const API_ENDPOINTS = {
       requiresAuth: true,
     },
     updateEmail: {
-      url: '/api/users/{userId}/email',
+      url: '/api/users/{userId}',
       method: 'PUT',
       requiresAuth: true,
     },
     updateMobile: {
-      url: '/api/users/{userId}/mobile',
+      url: '/api/users/{userId}',
       method: 'PUT',
       requiresAuth: true,
     },
@@ -702,7 +718,7 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     // Log request details
     console.log('🌐 NETWORK REQUEST:', {
       method: config.method?.toUpperCase(),
@@ -711,7 +727,7 @@ apiClient.interceptors.request.use(
       data: config.data,
       timestamp: new Date().toISOString()
     });
-    
+
     return config;
   },
   (error) => {
@@ -746,7 +762,7 @@ apiClient.interceptors.response.use(
       data: response.data,
       timestamp: new Date().toISOString()
     });
-    
+
     return response;
   },
   async (error) => {
@@ -776,7 +792,11 @@ apiClient.interceptors.response.use(
     }
 
     // If error is 401 and we haven't tried to refresh token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip token refresh for auth endpoints (login, signup, etc.) — let them return their own error
+    const isAuthRequest = originalRequest?.url?.includes('/api/auth/login') ||
+      originalRequest?.url?.includes('/api/auth/signup') ||
+      originalRequest?.url?.includes('/api/auth/otp');
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
       originalRequest._retry = true;
 
       // If already refreshing, queue this request
@@ -799,13 +819,13 @@ apiClient.interceptors.response.use(
         const refreshTokenValue = await getRefreshToken();
         if (refreshTokenValue) {
           const refreshResult = await refreshToken(refreshTokenValue);
-          
+
           if (refreshResult.success) {
             // Store new tokens
             // Preserve existing userData if refresh response doesn't include it
             const existingUserData = await getUserData();
             const userDataToStore = refreshResult.data.user || existingUserData || {};
-            
+
             await storeTokens(
               refreshResult.data.accessToken,
               refreshResult.data.refreshToken,
@@ -860,3 +880,5 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+

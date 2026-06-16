@@ -1,9 +1,9 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { typography } from './global';
 
 const { width, height } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -12,7 +12,7 @@ export default StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 100, // Standard clearance for absolute floating header
   },
   shopTitle: {
     fontSize: 28,
@@ -30,28 +30,27 @@ export default StyleSheet.create({
   },
   categoryCard: {
     width: (width - 60) / 2,
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 20,
     marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: colors.borderLight || '#F3F4F6',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
   },
   categoryImageContainer: {
     width: '100%',
     height: 100,
-    backgroundColor: colors.lightGray,
-    borderRadius: 8,
+    backgroundColor: colors.backgroundDark || colors.lightGray,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
   },
   categoryImage: {
     fontSize: 40,
@@ -76,4 +75,6 @@ export default StyleSheet.create({
     color: colors.primary,
     fontWeight: '500',
   },
-}); 
+});
+
+export default createStyles;

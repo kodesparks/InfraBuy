@@ -12,8 +12,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { updateEmail } from '../../services/api';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -36,9 +38,9 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
     const newErrors = {};
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('Email is required');
     } else if (!validateEmail(email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('Please enter a valid email address');
     }
 
     setErrors(newErrors);
@@ -51,12 +53,12 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User ID not found');
+      Alert.alert(t('Error'), t('User ID not found'));
       return;
     }
 
     if (email.trim() === user.email) {
-      Alert.alert('Info', 'Email is the same as current email');
+      Alert.alert(t('Info'), t('Email is the same as current email'));
       return;
     }
 
@@ -71,8 +73,8 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
       if (result.success) {
         Toast.show({
           type: 'success',
-          text1: 'Success',
-          text2: result.message || 'Email updated successfully',
+          text1: t('Success!'),
+          text2: result.message || t('Email updated successfully'),
         });
         // Pass updated user data directly to avoid API call
         onSuccess(result.data);
@@ -80,15 +82,15 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Error',
-          text2: result.error?.message || 'Failed to update email',
+          text1: t('Error'),
+          text2: result.error?.message || t('Failed to update email'),
         });
       }
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Failed to update email',
+        text1: t('Error'),
+        text2: t('Failed to update email'),
       });
     } finally {
       setLoading(false);
@@ -105,7 +107,7 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Update Email</Text>
+            <Text style={styles.modalTitle}>{t('Update Email')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Icon name="x" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -113,7 +115,7 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>New Email Address *</Text>
+              <Text style={styles.label}>{t('New Email Address *')}</Text>
               <TextInput
                 style={[styles.input, errors.email && styles.inputError]}
                 value={email}
@@ -123,7 +125,7 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
                     setErrors({ ...errors, email: null });
                   }
                 }}
-                placeholder="Enter new email address"
+                placeholder={t('Enter new email address')}
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -133,17 +135,17 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Current Password (Optional)</Text>
+              <Text style={styles.label}>{t('Current Password (Optional)')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password for verification"
+                placeholder={t('Enter your password for verification')}
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry
               />
               <Text style={styles.helperText}>
-                Some accounts may require password verification
+                {t('Some accounts may require password verification')}
               </Text>
             </View>
           </View>
@@ -154,7 +156,7 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.submitButton]}
@@ -164,7 +166,7 @@ const EditEmailModal = ({ visible, onClose, user, onSuccess }) => {
               {loading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Update Email</Text>
+                <Text style={styles.submitButtonText}>{t('Update Email')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -266,4 +268,7 @@ const styles = {
 };
 
 export default EditEmailModal;
+
+
+
 

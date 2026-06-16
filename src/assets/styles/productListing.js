@@ -1,70 +1,64 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { typography, spacing, borderRadius, shadows } from './global';
 
 const { width, height } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors, isDarkMode) => ({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface, // Use spec base color
   },
 
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 15,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface, 
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
-    borderRadius: 12,
+    backgroundColor: colors.surface_container_low, // Tonal contrast
+    borderRadius: borderRadius.full, // 2rem / pill specification
     paddingHorizontal: 15,
     paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    // THE SPEC: Ambient Shadow for floating elements
+    ...shadows.cloud,
   },
   searchIcon: {
     fontSize: 18,
-    color: colors.darkGray,
+    color: colors.on_surface_variant,
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.text,
+    color: colors.on_surface,
   },
   clearButton: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.surface_container_high,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   clearButtonText: {
     fontSize: 12,
-    color: colors.darkGray,
-    fontWeight: 'bold',
+    color: colors.on_surface_variant,
+    fontWeight: '700',
   },
   filterButton: {
     marginLeft: 10,
   },
   filterIcon: {
     fontSize: 18,
-    color: colors.darkGray,
+    color: colors.on_surface_variant,
   },
   filterContainer: {
     paddingHorizontal: 20,
     paddingBottom: 15,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
   },
   filterList: {
     paddingRight: 20,
@@ -73,22 +67,22 @@ export default StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginRight: 10,
-    borderRadius: 20,
-    backgroundColor: colors.lightGray,
-    borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderRadius: borderRadius.full, // Pill-shaped as per SPEC
+    backgroundColor: colors.surface_container_low,
+    // The "No-Line" rule: Borders/dividers are prohibited.
   },
   filterItemSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: 'transparent',
+    // Selection handled by LinearGradient in component
   },
   filterText: {
     fontSize: 14,
-    color: colors.darkGray,
+    color: colors.on_surface_variant,
     fontWeight: '500',
   },
   filterTextSelected: {
-    color: colors.white,
+    color: colors.textWhite,
+    fontWeight: '700',
   },
   resultsInfo: {
     flexDirection: 'row',
@@ -99,18 +93,19 @@ export default StyleSheet.create({
   },
   resultsText: {
     fontSize: 14,
-    color: colors.darkGray,
+    color: colors.on_surface_variant,
   },
   clearFilterText: {
     fontSize: 14,
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '700',
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
+    backgroundColor: colors.surface,
   },
   emptyIcon: {
     fontSize: 60,
@@ -118,14 +113,15 @@ export default StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    color: colors.text,
-    fontWeight: '600',
+    color: colors.on_surface,
+    fontWeight: '700',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: colors.darkGray,
+    color: colors.on_surface_variant,
     textAlign: 'center',
+    lineHeight: 21,
   },
   productsContainer: {
     paddingHorizontal: 20,
@@ -136,290 +132,70 @@ export default StyleSheet.create({
     width: '100%',
     alignItems: 'stretch',
   },
+  productShadowWrapper: {
+    padding: 8, 
+    width: (width - 24) / 3, 
+  },
   productCard: {
     width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    marginHorizontal: 0,
+    backgroundColor: isDarkMode ? '#111318' : '#FFFFFF',
+    borderRadius: 14, // Increased safety margin to prevent clipping
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 2,
+    borderWidth: 0,
+    minHeight: 200, // Ensure consistent card height
   },
   productImageContainer: {
-    position: 'relative',
     width: '100%',
-    height: 128,
-    backgroundColor: '#F3F4F6',
+    aspectRatio: 1, 
+    backgroundColor: isDarkMode ? '#1A1D21' : '#F7F7F7',
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   productImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: '90%',
+    height: '90%',
   },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#10B981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9999,
-    zIndex: 10,
-  },
-  discountBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#FFFFFF',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 24,
-    height: 24,
+  placeholderImage: {
+    padding: 16,
+    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  favoriteIcon: {
-    fontSize: 12,
-    color: '#374151',
   },
   productInfo: {
-    padding: 12,
-  },
-  brandBadgeContainer: {
-    marginBottom: 8,
-  },
-  brandBadge: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    alignSelf: 'flex-start',
-  },
-  brandBadgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#1E40AF',
+    padding: 10,
+    flex: 1,
+    justifyContent: 'space-between', // Push button to bottom
   },
   productName: {
-    fontSize: 14,
+    fontSize: 12, 
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 8,
-    textAlign: 'left',
-  },
-  itemCodeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  itemCode: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  subCategoryBadge: {
-    backgroundColor: '#DBEAFE',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  subCategoryBadgeText: {
-    fontSize: 12,
-    color: '#2563EB',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  ratingStar: {
-    fontSize: 12,
-    color: '#FACC15',
-    marginRight: 4,
-  },
-  ratingText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#374151',
-    marginRight: 4,
-  },
-  reviewsText: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  featuresContainer: {
-    marginBottom: 12,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    color: isDarkMode ? '#E5E7EB' : '#1F2937',
     marginBottom: 4,
-  },
-  featureIcon: {
-    fontSize: 10,
-    color: '#10B981',
-    marginRight: 4,
-  },
-  featureText: {
-    fontSize: 12,
-    color: '#4B5563',
-    flex: 1,
-  },
-  deliveryBanner: {
-    backgroundColor: '#D1FAE5',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginBottom: 12,
-  },
-  deliveryBannerText: {
-    fontSize: 12,
-    color: '#059669',
-  },
-  pricingSection: {
-    marginBottom: 12,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
+    lineHeight: 16,
+    minHeight: 32, 
   },
   priceLabel: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  priceValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  originalPrice: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
-  },
-  discountedPrice: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#059669',
+    color: isDarkMode ? '#9CA3AF' : '#4B5563',
+    marginBottom: 10,
   },
-  currentPrice: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  deliveryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  deliveryNotAvailable: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#DC2626',
-  },
-  deliveryFree: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#059669',
-  },
-  deliveryCharge: {
-    fontSize: 12,
-    color: '#4B5563',
-  },
-  totalPriceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 8,
-    marginBottom: 8,
-  },
-  totalPriceLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
-  totalPriceValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-  distanceInfo: {
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  distanceText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  deliveryReason: {
-    fontSize: 12,
-    color: '#DC2626',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  addToCartButton: {
-    flex: 1,
-    backgroundColor: '#1D4ED8',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+  enquiryButton: {
+    width: '100%',
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
   },
-  addToCartButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-  },
-  addToCartButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+  enquiryButtonText: {
     color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  addToCartButtonTextDisabled: {
-    color: '#6B7280',
-  },
-  viewDetailsButton: {
-    width: 40,
-    height: 40,
-    borderWidth: 2,
-    borderColor: '#1D4ED8',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewDetailsIcon: {
-    fontSize: 14,
-    color: '#1D4ED8',
-  },
-}); 
+});
+
+
+export default createStyles;
+
+

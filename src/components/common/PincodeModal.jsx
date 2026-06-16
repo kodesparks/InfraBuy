@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { colors, spacing, borderRadius, typography } from '../../assets/styles/global';
+import { colors, spacing, borderRadius, typography, shadows } from '../../assets/styles/global';
 import { geocodingService } from '../../services/location/geocodingService';
 
 const PincodeModal = ({ visible, onClose, onPincodeSet }) => {
@@ -30,13 +30,13 @@ const PincodeModal = ({ visible, onClose, onPincodeSet }) => {
     setLoading(true);
     try {
       const locationData = await geocodingService.getCoordinatesFromPincode(pincode);
-      
+
       // Call the callback with pincode and location data
       onPincodeSet({
         pincode: pincode.trim(),
         location: locationData,
       });
-      
+
       setPincode('');
       onClose();
     } catch (error) {
@@ -89,7 +89,7 @@ const PincodeModal = ({ visible, onClose, onPincodeSet }) => {
           >
             <Text style={styles.cancelButtonText}>Cancel</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={[
               styles.button,
@@ -118,105 +118,103 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     zIndex: 9999,
-    elevation: 9999,
   },
   modalContainer: {
-    backgroundColor: 'white',
-    borderRadius: borderRadius.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.xl,
     width: '100%',
     maxWidth: 400,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    padding: spacing.lg,
+    ...shadows.cloud,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.lightGray,
+    marginBottom: spacing.lg,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.on_surface,
+    letterSpacing: -0.5,
   },
   closeButton: {
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface_container_low,
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeIcon: {
     fontSize: 24,
-    color: colors.textSecondary,
-    fontWeight: 'bold',
+    color: colors.on_surface_variant,
+    fontWeight: '300',
   },
   content: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    marginBottom: spacing.xl,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.on_surface_variant,
     marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
-    borderWidth: 1,
-    borderColor: colors.primary,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    backgroundColor: colors.surface_container_low,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     fontSize: 16,
-    color: colors.textPrimary,
-    backgroundColor: 'white',
+    color: colors.on_surface,
+    fontWeight: '600',
   },
   buttonContainer: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
     gap: spacing.md,
   },
   button: {
     flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    height: 56,
+    borderRadius: borderRadius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.surface_container,
   },
   confirmButton: {
     backgroundColor: colors.primary,
+    ...shadows.cloud,
   },
   disabledButton: {
-    backgroundColor: colors.lightGray,
+    opacity: 0.5,
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.on_surface_variant,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   confirmButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'white',
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.white,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
 
 export default PincodeModal;
+
+
+

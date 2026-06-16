@@ -1,44 +1,46 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
 
 const TrackingScreen = ({ navigation, route }) => {
+  const { t } = useTranslation();
   // Add safety checks for route and params
   if (!route || !route.params) {
     console.warn('TrackingScreen: No route or params found');
   }
-  
+
   const { order } = route?.params || { order: { id: 'ORD001' } };
   const orderId = order?.id || 'ORD001';
 
   const trackingSteps = [
     {
       id: 1,
-      title: 'Order Placed',
-      description: 'Your order has been successfully placed',
+      title: t('Order Placed'),
+      description: t('Your order has been successfully placed'),
       status: 'completed',
       time: '2024-01-15 10:30 AM',
     },
     {
       id: 2,
-      title: 'Order Confirmed',
-      description: 'Order has been confirmed and is being processed',
+      title: t('Order Confirmed'),
+      description: t('Order has been confirmed and is being processed'),
       status: 'completed',
       time: '2024-01-15 11:00 AM',
     },
     {
       id: 3,
-      title: 'Out for Delivery',
-      description: 'Your order is out for delivery',
+      title: t('Out for Delivery'),
+      description: t('Your order is out for delivery'),
       status: 'in-progress',
       time: '2024-01-15 02:00 PM',
     },
     {
       id: 4,
-      title: 'Delivered',
-      description: 'Order has been delivered successfully',
+      title: t('Delivered'),
+      description: t('Order has been delivered successfully'),
       status: 'pending',
-      time: 'Expected: 2024-01-15 06:00 PM',
+      time: `${t('Expected: ')} 2024-01-15 06:00 PM`,
     },
   ];
 
@@ -74,18 +76,18 @@ const TrackingScreen = ({ navigation, route }) => {
   return (
     <View style={styles.container}>
       {/* Content */}
-      <ScrollView 
-        style={styles.content} 
+      <ScrollView
+        style={styles.content}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.orderInfo}>
-          <Text style={styles.orderId}>Order #{orderId}</Text>
-          <Text style={styles.orderStatus}>In Transit</Text>
+          <Text style={styles.orderId}>{t('Order #')}{orderId}</Text>
+          <Text style={styles.orderStatus}>{t('In Transit')}</Text>
         </View>
 
         <View style={styles.trackingContainer}>
-          <Text style={styles.trackingTitle}>Order Status</Text>
+          <Text style={styles.trackingTitle}>{t('Order Status')}</Text>
           {trackingSteps.map(renderTrackingStep)}
         </View>
       </ScrollView>
@@ -103,8 +105,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.md,
   },
-  
+
   scrollContent: {
+    paddingTop: 0, // No clearance needed (using relative flow)
     paddingBottom: spacing.xxl,
   },
 
@@ -182,3 +185,5 @@ const styles = StyleSheet.create({
 });
 
 export default TrackingScreen;
+
+

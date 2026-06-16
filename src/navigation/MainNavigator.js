@@ -1,16 +1,19 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { View, StyleSheet, Platform } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import HomeScreen from '../screens/HomeScreen/index';
 import OrdersScreen from '../screens/OrdersScreen/index';
 import UpdatesScreen from '../screens/UpdatesScreen/index';
 import ProfileScreen from '../screens/ProfileScreen/index';
 
-import { colors } from '../assets/styles/global';
 import AppHeader from '../components/common/AppHeader';
 import { useAppContext } from '../context/AppContext';
+import { useTranslation } from 'react-i18next';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../context/ThemeContext';
+import FloatingTabBar from '../components/common/FloatingTabBar';
+import CartFloatingPill from '../components/common/CartFloatingPill';
 
 const Tab = createBottomTabNavigator();
 
@@ -19,9 +22,9 @@ const HomeScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
-        title="infraXpert"
+        title="InfraExpert"
         cartCount={cartCount}
       />
       <HomeScreen navigation={navigation} />
@@ -33,7 +36,7 @@ const OrdersScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
         title="Orders"
         cartCount={cartCount}
@@ -47,7 +50,7 @@ const UpdatesScreenWrapper = ({ navigation }) => {
   const { cartCount } = useAppContext();
   return (
     <View style={{ flex: 1 }}>
-      <AppHeader 
+      <AppHeader
         navigation={navigation}
         title="Updates"
         cartCount={cartCount}
@@ -57,98 +60,44 @@ const UpdatesScreenWrapper = ({ navigation }) => {
   );
 };
 
-const ProfileScreenWrapper = ({ navigation }) => {
-  const { cartCount } = useAppContext();
-  return (
-    <View style={{ flex: 1 }}>
-      <AppHeader 
-        navigation={navigation}
-        title="Profile"
-        showBack={true}
-        cartCount={cartCount}
-      />
-      <ProfileScreen navigation={navigation} />
-    </View>
-  );
-};
-
 const MainNavigator = () => {
+  const { t } = useTranslation();
+  const insets = useSafeAreaInsets();
+  const { colors, isDarkMode } = useTheme();
+
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Orders') {
-            iconName = focused ? 'document-text' : 'document-text-outline';
-          } else if (route.name === 'Updates') {
-            iconName = focused ? 'chatbubble' : 'chatbubble-outline';
-          }
-
-          return (
-            <View style={{ alignItems: 'center' }}>
-              <Icon 
-                name={iconName} 
-                size={24} 
-                color={focused ? colors.white : colors.white} 
-              />
-            </View>
-          );
-        },
-        tabBarActiveTintColor: colors.white,
-        tabBarInactiveTintColor: colors.white,
-        tabBarStyle: {
-          backgroundColor: 'transparent',
-          borderTopWidth: 0,
-          paddingVertical: 6,
-          paddingHorizontal: 20,
-          height: 60,
-          elevation: 0,
-          shadowOpacity: 0,
-        },
-        tabBarBackground: () => (
-          <LinearGradient
-            colors={['#723FED', '#3B58EB']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={{ flex: 1 }}
-          />
-        ),
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-          marginTop: 2,
-          color: colors.white,
-        },
+      tabBar={props => <FloatingTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
-        <Tab.Screen 
-          name="Home" 
-          component={HomeScreenWrapper}
-          options={{
-            tabBarLabel: 'Home',
-          }}
-        />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreenWrapper}
+        options={{
+          tabBarLabel: t('Home'),
+        }}
+      />
 
-        <Tab.Screen 
-          name="Orders" 
-          component={OrdersScreenWrapper}
-          options={{
-            tabBarLabel: 'Orders',
-          }}
-        />
-        <Tab.Screen 
-          name="Updates" 
-          component={UpdatesScreenWrapper}
-          options={{
-            tabBarLabel: 'Updates',
-          }}
-        />
+      <Tab.Screen
+        name="Orders"
+        component={OrdersScreenWrapper}
+        options={{
+          tabBarLabel: t('Orders'),
+        }}
+      />
+      <Tab.Screen
+        name="Updates"
+        component={UpdatesScreenWrapper}
+        options={{
+          tabBarLabel: t('Updates'),
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
-export default MainNavigator; 
+export default MainNavigator;
+
+

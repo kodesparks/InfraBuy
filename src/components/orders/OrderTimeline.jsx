@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { getStatusConfig, STATUS_FLOW } from '../../utils/orderStatus';
 
 const OrderTimeline = ({ currentStatus }) => {
+  const { t } = useTranslation();
   const getStepStatus = (stepStatus, currentStatus) => {
     const statusFlow = [
       'order_placed',
@@ -16,10 +18,10 @@ const OrderTimeline = ({ currentStatus }) => {
       'out_for_delivery',
       'delivered',
     ];
-    
+
     const currentIndex = statusFlow.indexOf(currentStatus);
     const stepIndex = statusFlow.indexOf(stepStatus);
-    
+
     if (stepIndex === -1) return 'upcoming';
     if (stepIndex < currentIndex) return 'completed';
     if (stepIndex === currentIndex) return 'current';
@@ -48,14 +50,14 @@ const OrderTimeline = ({ currentStatus }) => {
   };
 
   const timelineSteps = [
-    { status: 'order_placed', label: 'Order Placed', description: 'Your order has been received and is being processed', icon: 'package' },
-    { status: 'vendor_accepted', label: 'Order Accepted', description: 'Vendor has accepted your order', icon: 'check-circle' },
-    { status: 'payment_done', label: 'Payment Done', description: 'Payment has been processed successfully', icon: 'check-circle' },
-    { status: 'order_confirmed', label: 'Order Confirmed', description: 'Your order is confirmed and being prepared', icon: 'check-circle' },
-    { status: 'shipped', label: 'Shipped', description: 'Your order has been shipped from warehouse', icon: 'package' },
-    { status: 'in_transit', label: 'In Transit', description: 'Order is in transit to your location', icon: 'truck' },
-    { status: 'out_for_delivery', label: 'Out for Delivery', description: 'Order is out for delivery today', icon: 'truck' },
-    { status: 'delivered', label: 'Delivered', description: 'Order has been delivered successfully', icon: 'check-circle' },
+    { status: 'order_placed', label: t('Order Placed'), description: t('Your order has been received and is being processed'), icon: 'package' },
+    { status: 'vendor_accepted', label: t('Order Accepted'), description: t('Vendor has accepted your order'), icon: 'check-circle' },
+    { status: 'payment_done', label: t('Payment Done'), description: t('Payment has been processed successfully'), icon: 'check-circle' },
+    { status: 'order_confirmed', label: t('Order Confirmed'), description: t('Your order is confirmed and being prepared'), icon: 'check-circle' },
+    { status: 'shipped', label: t('Shipped'), description: t('Your order has been shipped from warehouse'), icon: 'package' },
+    { status: 'in_transit', label: t('In Transit'), description: t('Order is in transit to your location'), icon: 'truck' },
+    { status: 'out_for_delivery', label: t('Out for Delivery'), description: t('Order is out for delivery today'), icon: 'truck' },
+    { status: 'delivered', label: t('Delivered'), description: t('Order has been delivered successfully'), icon: 'check-circle' },
   ];
 
   return (
@@ -90,7 +92,7 @@ const OrderTimeline = ({ currentStatus }) => {
                   <Text style={styles.stepLabel}>{step.label}</Text>
                   <View style={[styles.stepBadge, { backgroundColor: stepColor === '#10B981' ? '#D1FAE5' : stepColor === '#3B82F6' ? '#DBEAFE' : '#F3F4F6' }]}>
                     <Text style={[styles.stepBadgeText, { color: stepColor }]}>
-                      {stepStatusType === 'completed' ? 'Completed' : stepStatusType === 'current' ? 'Current' : 'Upcoming'}
+                      {stepStatusType === 'completed' ? t('Completed') : stepStatusType === 'current' ? t('Current') : t('Upcoming')}
                     </Text>
                   </View>
                 </View>
@@ -170,4 +172,6 @@ const styles = StyleSheet.create({
 });
 
 export default OrderTimeline;
+
+
 

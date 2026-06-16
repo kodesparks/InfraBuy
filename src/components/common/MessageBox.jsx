@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
   },
   title: {
     fontSize: 18,
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   userMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
   },
   supportMessage: {
     alignSelf: 'flex-start',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   sendButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -189,3 +189,6 @@ const styles = StyleSheet.create({
 });
 
 export default MessageBox;
+
+
+

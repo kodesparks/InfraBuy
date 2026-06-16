@@ -1,5 +1,5 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { colors, typography, shadows, spacing, borderRadius } from './global';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,7 +15,7 @@ export default StyleSheet.create({
   productImageContainer: {
     width: '100%',
     height: 300,
-    backgroundColor: '#2D3748',
+    backgroundColor: colors.backgroundDark || '#2D3748',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -23,12 +23,13 @@ export default StyleSheet.create({
     fontSize: 80,
   },
   productInfoCard: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    marginTop: -20,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    marginTop: -24,
     minHeight: height * 0.6,
+    ...shadows.cloud,
   },
   productName: {
     fontSize: 24,
@@ -83,7 +84,7 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
   addToOrderButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
@@ -176,4 +177,6 @@ export default StyleSheet.create({
     fontSize: 12,
     color: colors.darkGray,
   },
-}); 
+});
+
+

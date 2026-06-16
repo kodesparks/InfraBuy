@@ -73,3 +73,13 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Environment files
+.env
+src/env.js
+
+# Local logs and temp files
+*.log
+android/*.log
+*.txt
+*.tmp

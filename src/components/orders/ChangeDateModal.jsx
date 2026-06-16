@@ -2,10 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
+import { spacing, borderRadius } from '../../assets/styles/global';
 import { orderService } from '../../services/api/orderService';
 
 const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
+  const { t } = useTranslation();
+  const { colors, isDarkMode } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, isDarkMode), [colors, isDarkMode]);
   const [newDate, setNewDate] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,32 +18,32 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!newDate.trim()) {
-      newErrors.newDate = 'Delivery date is required';
+      newErrors.newDate = t('Delivery date is required');
     } else {
       // Validate date format (YYYY-MM-DD)
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(newDate)) {
-        newErrors.newDate = 'Please enter date in YYYY-MM-DD format';
+        newErrors.newDate = t('Please enter date in YYYY-MM-DD format');
       } else {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         const selectedDate = new Date(newDate);
         selectedDate.setHours(0, 0, 0, 0);
-        
+
         if (isNaN(selectedDate.getTime())) {
-          newErrors.newDate = 'Invalid date';
+          newErrors.newDate = t('Invalid date');
         } else if (selectedDate < today) {
-          newErrors.newDate = 'Delivery date must be today or a future date';
+          newErrors.newDate = t('Delivery date must be today or a future date');
         }
       }
     }
-    
+
     if (reason && reason.length > 200) {
-      newErrors.reason = 'Reason must be less than 200 characters';
+      newErrors.reason = t('Reason must be less than 200 characters');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -49,7 +54,7 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
     }
 
     if (!order?.id && !order?.leadId) {
-      Alert.alert('Error', 'Invalid order information');
+      Alert.alert(t('Error'), t('Invalid order information'));
       return;
     }
 
@@ -59,16 +64,16 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
       // Convert date string to ISO format
       const dateObj = new Date(newDate);
       dateObj.setHours(12, 0, 0, 0); // Set to noon to avoid timezone issues
-      
+
       const result = await orderService.changeDeliveryDate(leadId, {
         newDeliveryDate: dateObj.toISOString(),
         reason: reason.trim() || '',
       });
 
       if (result.success) {
-        Alert.alert('Success', 'Delivery date updated successfully', [
+        Alert.alert(t('Success'), t('Delivery date updated successfully'), [
           {
-            text: 'OK',
+            text: t('OK'),
             onPress: () => {
               setNewDate('');
               setReason('');
@@ -79,11 +84,11 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
           },
         ]);
       } else {
-        Alert.alert('Error', result.error || 'Failed to update delivery date');
+        Alert.alert(t('Error'), result.error || t('Failed to update delivery date'));
       }
     } catch (error) {
       console.error('Error changing date:', error);
-      Alert.alert('Error', 'Failed to update delivery date. Please try again.');
+      Alert.alert(t('Error'), t('Failed to update delivery date. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -102,12 +107,13 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
       visible={visible}
       transparent={true}
       animationType="slide"
+      statusBarTranslucent={true}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Change Delivery Date</Text>
+            <Text style={styles.title}>{t('Change Delivery Date')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Icon name="x" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -116,12 +122,12 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Current Date */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Current Delivery Date</Text>
+              <Text style={styles.sectionTitle}>{t('Current Delivery Date')}</Text>
               <View style={styles.currentInfoBox}>
                 <Text style={styles.currentInfoText}>
                   {order?.deliveryExpectedDate
                     ? formatDate(new Date(order.deliveryExpectedDate))
-                    : 'N/A'}
+                    : t('N/A')}
                 </Text>
               </View>
             </View>
@@ -130,14 +136,14 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
             <View style={styles.warningBox}>
               <Icon name="alert-triangle" size={20} color="#F59E0B" />
               <Text style={styles.warningText}>
-                Delivery date changes are only allowed within 48 hours of order placement
+                {t('Delivery date changes are only allowed within 48 hours of order placement')}
               </Text>
             </View>
 
             {/* New Date Form */}
             <View style={styles.section}>
               <Text style={styles.label}>
-                New Delivery Date <Text style={styles.required}>*</Text>
+                {t('New Delivery Date')} <Text style={styles.required}>*</Text>
               </Text>
               <TextInput
                 style={[styles.dateInput, errors.newDate && styles.inputError]}
@@ -148,7 +154,7 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
                     setErrors({ ...errors, newDate: null });
                   }
                 }}
-                placeholder="YYYY-MM-DD (e.g., 2025-12-25)"
+                placeholder={t('YYYY-MM-DD (e.g., 2025-12-25)')}
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="numbers-and-punctuation"
                 maxLength={10}
@@ -158,13 +164,13 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
                 <Text style={styles.errorText}>{errors.newDate}</Text>
               )}
               <Text style={styles.helperText}>
-                Enter date in YYYY-MM-DD format. Must be today or a future date.
+                {t('Enter date in YYYY-MM-DD format. Must be today or a future date.')}
               </Text>
             </View>
 
             {/* Reason */}
             <View style={styles.section}>
-              <Text style={styles.label}>Reason (Optional)</Text>
+              <Text style={styles.label}>{t('Reason (Optional)')}</Text>
               <TextInput
                 style={[styles.textArea, errors.reason && styles.inputError]}
                 value={reason}
@@ -174,7 +180,7 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
                     setErrors({ ...errors, reason: null });
                   }
                 }}
-                placeholder="Why are you changing the delivery date? (max 200 characters)"
+                placeholder={t('Why are you changing the delivery date? (max 200 characters)')}
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
@@ -192,7 +198,7 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
                 onPress={onClose}
                 disabled={loading}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.updateButton, loading && styles.updateButtonDisabled]}
@@ -200,12 +206,12 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
                 disabled={loading}
               >
                 <LinearGradient
-                  colors={loading ? ['#9CA3AF', '#6B7280'] : ['#723FED', '#3B58EB']}
+                  colors={loading ? ['#9CA3AF', '#6B7280'] : colors.primaryGradient}
                   style={styles.updateButtonGradient}
                 >
                   <Icon name="check" size={18} color="#FFFFFF" />
                   <Text style={styles.updateButtonText}>
-                    {loading ? 'Updating...' : 'Update Date'}
+                    {loading ? t('Updating...') : t('Update Date')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -217,18 +223,20 @@ const ChangeDateModal = ({ visible, onClose, order, onSuccess }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, isDarkMode) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   content: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
     maxHeight: '90%',
     padding: spacing.lg,
+    borderWidth: isDarkMode ? 1.5 : 0,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
   },
   header: {
     flexDirection: 'row',
@@ -239,7 +247,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   section: {
     marginBottom: spacing.lg,
@@ -247,21 +255,21 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
   currentInfoBox: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
     padding: spacing.md,
     borderRadius: borderRadius.md,
   },
   currentInfoText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   warningBox: {
     flexDirection: 'row',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
     padding: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.lg,
@@ -270,13 +278,13 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 14,
-    color: '#92400E',
+    color: isDarkMode ? '#FBBF24' : '#92400E',
     lineHeight: 20,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   required: {
@@ -284,16 +292,16 @@ const styles = StyleSheet.create({
   },
   dateInput: {
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     fontSize: 16,
-    color: colors.text,
-    backgroundColor: colors.white,
+    color: colors.textPrimary,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
   },
   helperText: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: colors.textLight,
     marginTop: spacing.xs,
     fontStyle: 'italic',
   },
@@ -302,11 +310,12 @@ const styles = StyleSheet.create({
   },
   textArea: {
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
     minHeight: 80,
     textAlignVertical: 'top',
   },
@@ -326,12 +335,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: colors.border,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   updateButton: {
     flex: 1,
@@ -349,11 +359,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   updateButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
 });
 
 export default ChangeDateModal;
+
+
 

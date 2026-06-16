@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Image
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -17,16 +18,46 @@ import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { loginUser } from '../../services/api';
 import { storeTokens } from '../../services/auth/tokenManager';
 import { useAuth } from '../../context/AuthContext';
+import * as Keychain from 'react-native-keychain';
+import Icon from 'react-native-vector-icons/Feather';
+import { useTranslation } from 'react-i18next';
 
 const LoginScreen = ({ navigation }) => {
-  const [loginMethod, setLoginMethod] = useState('email'); // 'email' or 'mobile'
+  const { t } = useTranslation();
+  const [loginMethod, setLoginMethod] = useState('mobile'); // 'email' or 'mobile'
   const [formData, setFormData] = useState({
     email: '',
     mobile: '',
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isBiometricSupported, setIsBiometricSupported] = useState(false);
+  const [hasSavedCredentials, setHasSavedCredentials] = useState(false);
   const { login, checkAuthStatus } = useAuth();
+
+  // Check for biometric support and saved credentials on mount
+  useEffect(() => {
+    checkBiometricAvailability();
+  }, []);
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const biometryType = await Keychain.getSupportedBiometryType();
+      if (biometryType) {
+        setIsBiometricSupported(true);
+        // Check if there are credentials saved
+        const credentials = await Keychain.getGenericPassword();
+        if (credentials) {
+          setHasSavedCredentials(true);
+          // Auto-trigger biometric login
+          handleBiometricLogin(credentials);
+        }
+      }
+    } catch (error) {
+      console.log('Error checking biometrics:', error);
+    }
+  };
 
   // Re-check auth status when screen is focused (e.g., after token expiration)
   useFocusEffect(
@@ -41,8 +72,8 @@ const LoginScreen = ({ navigation }) => {
       if (!formData.email.trim()) {
         Toast.show({
           type: 'error',
-          text1: 'Validation Error',
-          text2: 'Please enter your email address'
+          text1: t('Validation Error'),
+          text2: t('Please enter your email address')
         });
         return false;
       }
@@ -50,26 +81,26 @@ const LoginScreen = ({ navigation }) => {
       if (!formData.mobile.trim()) {
         Toast.show({
           type: 'error',
-          text1: 'Validation Error',
-          text2: 'Please enter your mobile number'
+          text1: t('Validation Error'),
+          text2: t('Please enter your mobile number')
         });
         return false;
       }
       if (formData.mobile.length < 10) {
         Toast.show({
           type: 'error',
-          text1: 'Validation Error',
-          text2: 'Please enter a valid mobile number'
+          text1: t('Validation Error'),
+          text2: t('Please enter a valid mobile number')
         });
         return false;
       }
     }
-    
+
     if (!formData.password) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please enter your password'
+        text1: t('Validation Error'),
+        text2: t('Please enter your password')
       });
       return false;
     }
@@ -82,18 +113,20 @@ const LoginScreen = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-      const credentials = loginMethod === 'email' 
+      const credentials = loginMethod === 'email'
         ? {
-            email: formData.email.trim().toLowerCase(),
-            password: formData.password
-          }
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password
+        }
         : {
-            mobile: formData.mobile.trim(),
-            password: formData.password
-          };
+          phone: String(formData.mobile.trim()),
+          password: formData.password
+        };
 
+      console.log('🔑 LOGIN PAYLOAD:', JSON.stringify(credentials));
       const result = await loginUser(credentials);
-      
+      console.log('🔑 LOGIN RESULT:', JSON.stringify(result));
+
       if (result.success) {
         // Store tokens and user data
         const stored = await storeTokens(
@@ -105,13 +138,13 @@ const LoginScreen = ({ navigation }) => {
         if (stored) {
           // Update auth context
           login(result.data.user);
-          
+
           Toast.show({
             type: 'success',
-            text1: 'Welcome Back!',
-            text2: 'Login successful'
+            text1: t('Welcome Back!'),
+            text2: t('Login successful')
           });
-          
+
           // Navigate to main app after storing tokens
           setTimeout(() => {
             navigation.navigate('MainApp');
@@ -119,53 +152,117 @@ const LoginScreen = ({ navigation }) => {
         } else {
           Toast.show({
             type: 'error',
-            text1: 'Login Failed',
-            text2: 'Failed to store authentication data'
+            text1: t('Login Failed'),
+            text2: t('Failed to store authentication data')
           });
         }
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Login Failed',
-          text2: result.error?.message || 'Invalid credentials'
+          text1: t('Login Failed'),
+          text2: result.error?.message || t('Invalid credentials')
         });
       }
     } catch (error) {
+      console.log('🔑 LOGIN EXCEPTION:', error?.message, error?.stack, JSON.stringify(error));
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Something went wrong. Please try again.'
+        text1: t('Error'),
+        text2: error?.message || t('Something went wrong. Please try again.')
       });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleBiometricLogin = async (preloadedCredentials = null) => {
+    try {
+      // Retrieve the credentials from keychain if not provided
+      const credentials = preloadedCredentials || await Keychain.getGenericPassword({
+        authenticationPrompt: {
+          title: t('Authentication Required'),
+          subtitle: t('Log in using your biometric credentials'),
+        },
+      });
+
+      if (credentials) {
+        setIsLoading(true);
+        // Determine login method from saved username (if it has @ it's email)
+        const isEmail = credentials.username.includes('@');
+
+        const loginPayload = isEmail
+          ? { email: credentials.username, password: credentials.password }
+          : { phone: String(credentials.username), password: credentials.password };
+
+        const result = await loginUser(loginPayload);
+
+        if (result.success) {
+          const stored = await storeTokens(
+            result.data.accessToken,
+            result.data.refreshToken,
+            result.data.user
+          );
+
+          if (stored) {
+            login(result.data.user);
+            Toast.show({
+              type: 'success',
+              text1: t('Welcome Back!'),
+              text2: t('Biometric login successful')
+            });
+
+            setTimeout(() => {
+              navigation.navigate('MainApp');
+            }, 1000);
+          } else {
+            Toast.show({ type: 'error', text1: t('Error'), text2: t('Failed to store authentication data') });
+            setIsLoading(false);
+          }
+        } else {
+          Toast.show({ type: 'error', text1: t('Login Failed'), text2: result.error?.message || t('Invalid credentials') });
+          setIsLoading(false);
+        }
+      } else {
+        Toast.show({ type: 'error', text1: t('Authentication Failed'), text2: t('Could not retrieve biometric credentials') });
+      }
+    } catch (error) {
+      console.log('Biometric login error:', error);
+      // User cancelled or biometric failed
+      if (error.message && !error.message.includes('User canceled')) {
+        Toast.show({ type: 'error', text1: t('Authentication Failed'), text2: t('Biometric verification failed') });
+      }
+    }
+  };
+
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <LinearGradient
-        colors={['#723FED', '#3B58EB']}
+        colors={colors.primaryGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={styles.gradient}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {/* Logo Section */}
-          <View style={styles.logoSection}>
-            <Text style={styles.logo}>infraXpert</Text>
-            <Text style={styles.tagline}>Building Materials Expert</Text>
+          <View style={styles.headerContainer}>
+            <Image
+              source={require('../../assets/images/logo_new.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+            <Text style={styles.tagline}>{t('Building Materials Expert')}</Text>
           </View>
 
           {/* Login Form */}
           <View style={styles.formContainer}>
-            <Text style={styles.title}>Welcome Back</Text>
-            
+            <Text style={styles.title}>{t('Welcome Back')}</Text>
+
             {/* Login Method Toggle */}
             <View style={styles.toggleContainer}>
               <TouchableOpacity
@@ -174,7 +271,7 @@ const LoginScreen = ({ navigation }) => {
                 disabled={isLoading}
               >
                 <Text style={[styles.toggleButtonText, loginMethod === 'email' && styles.toggleButtonTextActive]}>
-                  Email
+                  {t('Email')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -183,21 +280,21 @@ const LoginScreen = ({ navigation }) => {
                 disabled={isLoading}
               >
                 <Text style={[styles.toggleButtonText, loginMethod === 'mobile' && styles.toggleButtonTextActive]}>
-                  Mobile
+                  {t('Mobile')}
                 </Text>
               </TouchableOpacity>
             </View>
-            
+
             {/* Email/Mobile Input */}
             <View style={styles.inputContainer}>
               <TextInput
                 style={styles.input}
-                placeholder={loginMethod === 'email' ? "Email address" : "Mobile number"}
+                placeholder={loginMethod === 'email' ? t('Email address') : t('Mobile number')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={loginMethod === 'email' ? formData.email : formData.mobile}
-                onChangeText={(value) => setFormData(prev => ({ 
-                  ...prev, 
-                  [loginMethod]: value 
+                onChangeText={(value) => setFormData(prev => ({
+                  ...prev,
+                  [loginMethod]: value
                 }))}
                 keyboardType={loginMethod === 'email' ? "email-address" : "phone-pad"}
                 autoCapitalize="none"
@@ -205,38 +302,66 @@ const LoginScreen = ({ navigation }) => {
                 maxLength={loginMethod === 'mobile' ? 10 : undefined}
               />
             </View>
-            
+
             {/* Password Input */}
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, styles.passwordContainer]}>
               <TextInput
-                style={styles.input}
-                placeholder="Password"
+                style={styles.passwordInput}
+                placeholder={t('Password')}
                 placeholderTextColor="rgba(255, 255, 255, 0.8)"
                 value={formData.password}
                 onChangeText={(value) => setFormData(prev => ({ ...prev, password: value }))}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 editable={!isLoading}
               />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+                disabled={isLoading}
+              >
+                <Icon name={showPassword ? "eye" : "eye-off"} size={20} color="rgba(255, 255, 255, 0.8)" />
+              </TouchableOpacity>
             </View>
 
+            {/* Forgot Password Link */}
+            <TouchableOpacity
+              style={styles.forgotPasswordContainer}
+              onPress={() => navigation.navigate('ForgotPassword', { initialMethod: loginMethod })}
+              disabled={isLoading}
+            >
+              <Text style={styles.forgotPasswordText}>{t('Forgot Password?')}</Text>
+            </TouchableOpacity>
+
             {/* Login Button */}
-            <TouchableOpacity 
-              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]} 
+            <TouchableOpacity
+              style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color="#3B58EB" />
               ) : (
-                <Text style={styles.loginButtonText}>Sign In</Text>
+                <Text style={styles.loginButtonText}>{t('Sign In')}</Text>
               )}
             </TouchableOpacity>
 
+            {/* Biometric Login Button */}
+            {isBiometricSupported && hasSavedCredentials && (
+              <TouchableOpacity
+                style={styles.biometricButton}
+                onPress={handleBiometricLogin}
+                disabled={isLoading}
+              >
+                <Icon name="finger-print-outline" size={24} color="#ffffff" style={styles.biometricIcon} />
+                <Text style={styles.biometricButtonText}>{t('Login with Biometrics')}</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Signup Link */}
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
+              <Text style={styles.signupText}>{t("Don't have an account? ")}</Text>
               <TouchableOpacity onPress={() => navigation.navigate('Signup')} disabled={isLoading}>
-                <Text style={styles.signupLink}>Create Account</Text>
+                <Text style={styles.signupLink}>{t('Create Account')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -244,7 +369,7 @@ const LoginScreen = ({ navigation }) => {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Trusted by construction professionals across India
+              {t('Trusted by construction professionals across India')}
             </Text>
           </View>
         </ScrollView>
@@ -266,19 +391,17 @@ const styles = StyleSheet.create({
     paddingTop: 80,
     paddingBottom: 40,
   },
-  logoSection: {
+  headerContainer: {
     alignItems: 'center',
   },
-  logo: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: colors.white,
-    fontStyle: 'italic',
-    marginBottom: 8,
+  logoImage: {
+    height: 38,
+    width: 170,
+    marginBottom: spacing.xs,
   },
   tagline: {
     fontSize: 16,
-    color: colors.white,
+    color: '#ffffff',
     opacity: 0.9,
   },
   formContainer: {
@@ -292,7 +415,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.white,
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -319,7 +442,7 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
   },
   toggleButtonTextActive: {
-    color: colors.white,
+    color: '#ffffff',
     fontWeight: '600',
   },
   inputContainer: {
@@ -332,10 +455,27 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     borderWidth: 0,
-    color: colors.white,
+    color: '#ffffff',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: 12,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    borderWidth: 0,
+    color: '#ffffff',
+  },
+  eyeIcon: {
+    padding: 14,
   },
   loginButton: {
-    backgroundColor: colors.white,
+    backgroundColor: '#ffffff',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -363,6 +503,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
   },
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: 20,
+    marginTop: 5,
+  },
+  forgotPasswordText: {
+    color: '#E0E7FF',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   footer: {
     alignItems: 'center',
   },
@@ -371,6 +521,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
   },
+  biometricButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  biometricButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  biometricIcon: {
+    marginRight: 10,
+  }
 });
 
 export default LoginScreen;
+
+

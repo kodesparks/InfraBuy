@@ -741,3 +741,5 @@ export const getProductsByCategory = (categoryName) => {
 export const getFilterOptionsByCategory = (categoryName) => {
   return filterOptions[categoryName] || { types: ['All'], grades: ['All'] };
 };
+
+

@@ -286,3 +286,5 @@ class ProductService extends BaseService {
 // Create and export a singleton instance
 const productService = new ProductService();
 export default productService;
+
+

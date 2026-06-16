@@ -1,5 +1,5 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { colors, typography, spacing, borderRadius, shadows } from './global';
 
 const { width, height } = Dimensions.get('window');
 
@@ -21,29 +21,22 @@ export default StyleSheet.create({
   },
   categoryCard: {
     width: (width - 60) / 2,
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.xl,
+    padding: 16,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    ...shadows.cloud,
   },
   categoryImageContainer: {
     width: '100%',
     height: 120,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   categoryImagePlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.lightGray,
-    borderRadius: 8,
+    backgroundColor: colors.backgroundDark || colors.lightGray,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -66,4 +59,5 @@ export default StyleSheet.create({
 
 
 
-}); 
+});
+

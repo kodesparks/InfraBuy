@@ -1,18 +1,18 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography, spacing, borderRadius } from './global';
+import { typography, spacing, borderRadius, shadows } from './global';
 
 const { width } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors, isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.surface,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: 150, // Clearance for absolute floating button
   },
   header: {
     flexDirection: 'row',
@@ -20,7 +20,7 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -39,15 +39,16 @@ export default StyleSheet.create({
     padding: spacing.md,
   },
   section: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
     marginBottom: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadows.cloud,
+    borderWidth: isDarkMode ? 1.5 : 0,
+    borderTopColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+    borderLeftColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+    borderBottomColor: isDarkMode ? 'rgba(0, 0, 0, 0.4)' : 'transparent',
+    borderRightColor: isDarkMode ? 'rgba(0, 0, 0, 0.4)' : 'transparent',
   },
   sectionTitle: {
     fontSize: 18,
@@ -56,61 +57,54 @@ export default StyleSheet.create({
     marginBottom: spacing.md,
   },
   paymentMethodsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   paymentMethodCard: {
-    width: (width - spacing.md * 2 - spacing.sm) / 2,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
+    width: '100%',
+    backgroundColor: isDarkMode ? colors.cardLight : colors.background,
+    borderRadius: borderRadius.xl,
     padding: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.border,
     alignItems: 'center',
-    minHeight: 120,
-    justifyContent: 'center',
+    flexDirection: 'row', // Horizontal layout like Home screen categories
+    gap: spacing.md,
+    minHeight: 100,
+    justifyContent: 'flex-start',
+    ...shadows.cloud,
+    borderWidth: 1,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
   },
   paymentMethodCardSelected: {
     borderWidth: 2,
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '08',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
+    backgroundColor: 'transparent',
+    // Remove shadow for selected state as requested
+    shadowOpacity: 0,
+    elevation: 0,
   },
   paymentMethodIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.backgroundLight,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : colors.backgroundLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
   },
   paymentMethodIconSelected: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.primary,
   },
   paymentMethodName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: colors.textPrimary,
-    textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   paymentMethodNameSelected: {
     color: colors.primary,
   },
   paymentMethodDescription: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
-    textAlign: 'center',
+    lineHeight: 18,
   },
   form: {
     marginTop: spacing.sm,
@@ -130,12 +124,12 @@ export default StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     fontSize: 16,
     color: colors.textPrimary,
-    backgroundColor: colors.background,
+    backgroundColor: isDarkMode ? colors.cardLight : colors.background,
   },
   inputError: {
     borderColor: colors.error,
@@ -166,18 +160,19 @@ export default StyleSheet.create({
   },
   upiAppCard: {
     width: (width - spacing.md * 4 - spacing.sm * 3) / 4,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.md,
+    backgroundColor: isDarkMode ? colors.cardLight : colors.background,
+    borderRadius: borderRadius.xl,
     padding: spacing.sm,
-    borderWidth: 2,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 90,
+    ...shadows.cloud,
+    borderWidth: 1,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
   },
   upiAppCardSelected: {
     borderColor: colors.primary,
-    backgroundColor: colors.primaryLight + '10',
+    backgroundColor: isDarkMode ? 'rgba(103, 49, 226, 0.1)' : colors.primary + '10',
   },
   upiAppIcon: {
     width: 40,
@@ -195,7 +190,7 @@ export default StyleSheet.create({
   },
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: '#EFF6FF',
+    backgroundColor: isDarkMode ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF',
     padding: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.md,
@@ -204,12 +199,12 @@ export default StyleSheet.create({
   infoText: {
     flex: 1,
     fontSize: 13,
-    color: colors.info,
+    color: isDarkMode ? '#60A5FA' : colors.info,
     lineHeight: 20,
   },
   warningBox: {
     flexDirection: 'row',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.1)' : '#FEF3C7',
     padding: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.md,
@@ -218,12 +213,12 @@ export default StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 13,
-    color: colors.warning,
+    color: isDarkMode ? '#FBBF24' : colors.warning,
     lineHeight: 20,
   },
   successBox: {
     flexDirection: 'row',
-    backgroundColor: '#D1FAE5',
+    backgroundColor: isDarkMode ? 'rgba(16, 185, 129, 0.1)' : '#D1FAE5',
     padding: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.md,
@@ -232,34 +227,18 @@ export default StyleSheet.create({
   successBoxText: {
     flex: 1,
     fontSize: 13,
-    color: colors.success,
+    color: isDarkMode ? '#34D399' : colors.success,
     lineHeight: 20,
   },
-  selectContainer: {
-    position: 'relative',
-  },
-  deliveryDetails: {
-    gap: spacing.md,
-  },
-  deliveryItem: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  deliveryItemContent: {
-    flex: 1,
-  },
-  deliveryLabel: {
+  deliveryItemLabel: {
     fontSize: 12,
     color: colors.textSecondary,
     marginBottom: spacing.xs,
   },
-  deliveryValue: {
+  deliveryItemValue: {
     fontSize: 14,
     color: colors.textPrimary,
     marginBottom: spacing.xs,
-  },
-  orderSummary: {
-    marginTop: spacing.sm,
   },
   orderItem: {
     flexDirection: 'row',
@@ -267,10 +246,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
-  },
-  orderItemInfo: {
-    flex: 1,
+    borderBottomColor: colors.border,
   },
   orderItemName: {
     fontSize: 14,
@@ -307,9 +283,14 @@ export default StyleSheet.create({
     color: colors.primary,
   },
   payButton: {
-    marginTop: spacing.md,
-    borderRadius: borderRadius.md,
+    position: 'absolute',
+    bottom: spacing.lg,
+    alignSelf: 'center',
+    width: width * 0.7, // Pill size
+    borderRadius: borderRadius.full,
+    ...shadows.cloud,
     overflow: 'hidden',
+    zIndex: 100,
   },
   payButtonDisabled: {
     opacity: 0.5,
@@ -318,29 +299,28 @@ export default StyleSheet.create({
     paddingVertical: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: borderRadius.full,
   },
   payButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '600',
   },
   successContainer: {
     flex: 1,
-    backgroundColor: colors.backgroundLight,
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
   },
   successContent: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
     borderRadius: borderRadius.xl,
     padding: spacing.xxl,
     alignItems: 'center',
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    ...shadows.cloud,
+    borderWidth: isDarkMode ? 1 : 0,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   successTitle: {
     fontSize: 24,
@@ -357,15 +337,17 @@ export default StyleSheet.create({
   // Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
     maxHeight: '90%',
     paddingBottom: spacing.lg,
+    borderWidth: isDarkMode ? 1.5 : 0,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -387,13 +369,13 @@ export default StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    paddingVertical: spacing.md,
+    height: 48,
     borderRadius: borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   modalButtonCancel: {
-    backgroundColor: colors.background,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : colors.background,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -403,12 +385,13 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   modalButtonConfirm: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
   },
   modalButtonConfirmText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
 });
 
+export default createStyles;

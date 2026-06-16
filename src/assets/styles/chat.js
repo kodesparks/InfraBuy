@@ -1,9 +1,9 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { colors, typography, spacing, borderRadius, shadows } from './global';
 
 const { width, height } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors, isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -11,7 +11,7 @@ export default StyleSheet.create({
 
   chatContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 130, // Increased standard clearance for absolute floating header
     paddingBottom: 20,
   },
   messageContainer: {
@@ -30,20 +30,13 @@ export default StyleSheet.create({
     borderRadius: 18,
   },
   sentBubble: {
-    backgroundColor: colors.primary,
+    backgroundColor: 'transparent',
     borderBottomRightRadius: 5,
   },
   receivedBubble: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.white,
     borderBottomLeftRadius: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...shadows.cloud,
   },
   messageText: {
     fontSize: 16,
@@ -53,7 +46,7 @@ export default StyleSheet.create({
     color: colors.white,
   },
   receivedText: {
-    color: colors.text,
+    color: colors.textPrimary,
   },
   messageTime: {
     fontSize: 12,
@@ -65,45 +58,46 @@ export default StyleSheet.create({
     textAlign: 'right',
   },
   receivedTime: {
-    color: colors.darkGray,
+    color: colors.textSecondary,
   },
   quickRepliesContainer: {
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
+    backgroundColor: colors.background,
   },
   quickReplyButton: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.white,
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
   },
   quickReplyText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
+    paddingTop: 15,
+    paddingBottom: 110, // Increased to clear FloatingTabBar
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: colors.lightGray,
-    backgroundColor: colors.white,
+    borderTopColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
   },
   messageInput: {
     flex: 1,
-    backgroundColor: colors.lightGray,
+    backgroundColor: isDarkMode ? colors.card : '#f3f4f6',
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 10,
     marginRight: 10,
     fontSize: 16,
     maxHeight: 100,
+    color: colors.textPrimary,
   },
   sendButton: {
     width: 40,
@@ -114,9 +108,13 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: colors.lightGray,
+    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#e5e7eb',
   },
   sendButtonText: {
     fontSize: 18,
   },
-}); 
+});
+
+export default createStyles; 
+
+

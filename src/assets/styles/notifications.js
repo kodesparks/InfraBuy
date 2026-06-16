@@ -1,35 +1,36 @@
 import { StyleSheet, Platform, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { typography, spacing, borderRadius, shadows } from './global';
 
 const { width, height } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors, isDarkMode) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface, // Use surface for Soft UI
   },
 
   notificationsContainer: {
     paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingTop: 130, // Increased clearance for absolute floating header
+    paddingBottom: spacing.xl,
   },
   notificationItem: {
     flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: colors.surface_container_lowest || colors.background, // Match surface for embossed look
+    borderRadius: borderRadius.xl,
+    padding: 16,
+    marginBottom: 20,
+    ...shadows.cloud,
+    // Soft UI Embossed Borders
+    borderWidth: 1.5,
+    borderTopColor: isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.95)',
+    borderLeftColor: isDarkMode ? 'rgba(255, 255, 255, 0.18)' : 'rgba(255, 255, 255, 0.95)',
+    borderBottomColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)',
+    borderRightColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.08)',
   },
   unreadNotification: {
-    borderLeftWidth: 4,
+    // Enhanced unread state with subtle left glow/indicator
+    borderLeftWidth: 6,
     borderLeftColor: colors.primary,
   },
   notificationIcon: {
@@ -49,26 +50,30 @@ export default StyleSheet.create({
   },
   notificationTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
+    fontWeight: '700',
+    color: colors.textPrimary,
     marginBottom: 5,
   },
   notificationMessage: {
     fontSize: 14,
-    color: colors.darkGray,
+    color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 5,
   },
   notificationTime: {
     fontSize: 12,
-    color: colors.darkGray,
+    color: colors.textSecondary,
+    opacity: 0.7,
   },
   unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.primary,
     marginLeft: 10,
     alignSelf: 'center',
+    ...shadows.cloud,
   },
-}); 
+});
+
+export default createStyles;

@@ -13,8 +13,10 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { changePassword } from '../../services/api/profileService';
+import { useTranslation } from 'react-i18next';
 
 const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -28,23 +30,23 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
     const newErrors = {};
 
     if (!currentPassword.trim()) {
-      newErrors.currentPassword = 'Current password is required';
+      newErrors.currentPassword = t('Current password is required');
     }
 
     if (!newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = t('New password is required');
     } else if (newPassword.length < 6) {
-      newErrors.newPassword = 'New password must be at least 6 characters';
+      newErrors.newPassword = t('New password must be at least 6 characters');
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your new password';
+      newErrors.confirmPassword = t('Please confirm your new password');
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('Passwords do not match');
     }
 
     if (currentPassword === newPassword) {
-      newErrors.newPassword = 'New password must be different from current password';
+      newErrors.newPassword = t('New password must be different from current password');
     }
 
     setErrors(newErrors);
@@ -59,26 +61,26 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
     setLoading(true);
     try {
       const result = await changePassword(currentPassword, newPassword);
-      
+
       if (result.success) {
         // Reset form
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setErrors({});
-        
+
         if (onSuccess) {
           onSuccess();
         }
         onClose();
       } else {
         // Handle error
-        const errorMessage = result.error?.message || 'Failed to change password';
+        const errorMessage = result.error?.message || t('Failed to change password');
         setErrors({ submit: errorMessage });
       }
     } catch (error) {
       console.error('Error changing password:', error);
-      setErrors({ submit: 'An error occurred. Please try again.' });
+      setErrors({ submit: t('An error occurred. Please try again.') });
     } finally {
       setLoading(false);
     }
@@ -110,7 +112,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
         />
         <View style={styles.modalContent}>
           <View style={styles.header}>
-            <Text style={styles.title}>Change Password</Text>
+            <Text style={styles.title}>{t('Change Password')}</Text>
             <TouchableOpacity onPress={handleClose} disabled={loading}>
               <Icon name="x" size={24} color={colors.textPrimary} />
             </TouchableOpacity>
@@ -119,7 +121,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
           <View style={styles.form}>
             {/* Current Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Current Password *</Text>
+              <Text style={styles.label}>{t('Current Password *')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, errors.currentPassword && styles.inputError]}
@@ -130,7 +132,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
                       setErrors({ ...errors, currentPassword: null });
                     }
                   }}
-                  placeholder="Enter current password"
+                  placeholder={t('Enter current password')}
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showCurrentPassword}
                   editable={!loading}
@@ -153,7 +155,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
 
             {/* New Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>New Password *</Text>
+              <Text style={styles.label}>{t('New Password *')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, errors.newPassword && styles.inputError]}
@@ -164,7 +166,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
                       setErrors({ ...errors, newPassword: null });
                     }
                   }}
-                  placeholder="Enter new password (min 6 characters)"
+                  placeholder={t('Enter new password (min 6 characters)')}
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showNewPassword}
                   editable={!loading}
@@ -187,7 +189,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
 
             {/* Confirm Password */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Confirm New Password *</Text>
+              <Text style={styles.label}>{t('Confirm New Password *')}</Text>
               <View style={styles.passwordContainer}>
                 <TextInput
                   style={[styles.input, errors.confirmPassword && styles.inputError]}
@@ -198,7 +200,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
                       setErrors({ ...errors, confirmPassword: null });
                     }
                   }}
-                  placeholder="Confirm new password"
+                  placeholder={t('Confirm new password')}
                   placeholderTextColor={colors.textSecondary}
                   secureTextEntry={!showConfirmPassword}
                   editable={!loading}
@@ -233,7 +235,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
                 onPress={handleClose}
                 disabled={loading}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.submitButton, loading && styles.buttonDisabled]}
@@ -243,7 +245,7 @@ const ChangePasswordModal = ({ visible, onClose, onSuccess }) => {
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
-                  <Text style={styles.submitButtonText}>Change Password</Text>
+                  <Text style={styles.submitButtonText}>{t('Change Password')}</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -366,4 +368,6 @@ const styles = StyleSheet.create({
 });
 
 export default ChangePasswordModal;
+
+
 

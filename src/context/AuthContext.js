@@ -103,12 +103,15 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
+      // Get refresh token for backend logout
+      const refreshToken = await getRefreshToken();
       // Call logout API
-      await logoutUser();
+      await logoutUser(refreshToken);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      // Clear local state
+      // Always clear tokens and local state
+      await clearTokens();
       setUser(null);
       setIsLoggedIn(false);
     }
@@ -130,3 +133,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+

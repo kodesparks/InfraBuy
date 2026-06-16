@@ -18,8 +18,10 @@ import { colors, spacing, borderRadius, typography } from '../../assets/styles/g
 import { useAppContext } from '../../context/AppContext';
 import { cartService } from '../../services/api/cartService';
 import CustomerCareFooter from '../../components/common/CustomerCareFooter';
+import { useTranslation } from 'react-i18next';
 
 const DeliveryDetails = ({ navigation, route }) => {
+  const { t } = useTranslation();
   const { cartItems, userPincode, fetchCartItems } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -40,77 +42,77 @@ const DeliveryDetails = ({ navigation, route }) => {
   // Validation functions
   const validateField = (name, value) => {
     const newErrors = { ...errors };
-    
+
     switch (name) {
       case 'fullName':
         if (!value || value.trim() === '') {
-          newErrors.fullName = 'Full name is required';
+          newErrors.fullName = t('Full name is required');
         } else {
           delete newErrors.fullName;
         }
         break;
-      
+
       case 'phoneNumber':
         if (!value || value.trim() === '') {
-          newErrors.phoneNumber = 'Phone number is required';
+          newErrors.phoneNumber = t('Phone number is required');
         } else if (!/^\d{10}$/.test(value)) {
-          newErrors.phoneNumber = 'Please enter a valid 10-digit phone number';
+          newErrors.phoneNumber = t('Please enter a valid 10-digit phone number');
         } else {
           delete newErrors.phoneNumber;
         }
         break;
-      
+
       case 'email':
         if (value && value.trim() !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-          newErrors.email = 'Please enter a valid email address';
+          newErrors.email = t('Please enter a valid email address');
         } else {
           delete newErrors.email;
         }
         break;
-      
+
       case 'deliveryAddress':
         if (!value || value.trim() === '') {
-          newErrors.deliveryAddress = 'Delivery address is required';
+          newErrors.deliveryAddress = t('Delivery address is required');
         } else if (value.length > 500) {
-          newErrors.deliveryAddress = 'Address must be less than 500 characters';
+          newErrors.deliveryAddress = t('Address must be less than 500 characters');
         } else {
           delete newErrors.deliveryAddress;
         }
         break;
-      
+
       case 'city':
         if (!value || value.trim() === '') {
-          newErrors.city = 'City is required';
+          newErrors.city = t('City is required');
         } else {
           delete newErrors.city;
         }
         break;
-      
+
       case 'state':
         if (!value || value.trim() === '') {
-          newErrors.state = 'State is required';
+          newErrors.state = t('State is required');
         } else {
           delete newErrors.state;
         }
         break;
-      
+
       case 'pinCode':
         if (!value || value.trim() === '') {
-          newErrors.pinCode = 'PIN code is required';
+          newErrors.pinCode = t('PIN code is required');
         } else if (!/^\d{6}$/.test(value)) {
-          newErrors.pinCode = 'Please enter a valid 6-digit PIN code';
+          newErrors.pinCode = t('Please enter a valid 6-digit PIN code');
         } else {
           delete newErrors.pinCode;
         }
         break;
-      
+
       case 'preferredDeliveryDate':
         if (value) {
           const selectedDate = new Date(value);
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           if (selectedDate < today) {
-            newErrors.preferredDeliveryDate = 'Delivery date must be today or a future date';
+            newErrors.preferredDeliveryDate = t('Delivery date must be today or a future date');
           } else {
             delete newErrors.preferredDeliveryDate;
           }
@@ -119,7 +121,7 @@ const DeliveryDetails = ({ navigation, route }) => {
         }
         break;
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -127,13 +129,13 @@ const DeliveryDetails = ({ navigation, route }) => {
   const validateForm = () => {
     const fields = ['fullName', 'phoneNumber', 'deliveryAddress', 'city', 'state', 'pinCode'];
     let isValid = true;
-    
+
     fields.forEach(field => {
       if (!validateField(field, formData[field])) {
         isValid = false;
       }
     });
-    
+
     // Validate optional fields if provided
     if (formData.email) {
       validateField('email', formData.email);
@@ -141,7 +143,7 @@ const DeliveryDetails = ({ navigation, route }) => {
     if (formData.preferredDeliveryDate) {
       validateField('preferredDeliveryDate', formData.preferredDeliveryDate);
     }
-    
+
     return isValid && Object.keys(errors).length === 0;
   };
 
@@ -163,8 +165,8 @@ const DeliveryDetails = ({ navigation, route }) => {
     if (!validateForm()) {
       Toast.show({
         type: 'error',
-        text1: 'Validation Error',
-        text2: 'Please fill all required fields correctly.',
+        text1: t('Validation Error'),
+        text2: t('Please fill all required fields correctly.'),
       });
       return;
     }
@@ -172,8 +174,8 @@ const DeliveryDetails = ({ navigation, route }) => {
     if (!cartItems || cartItems.length === 0) {
       Toast.show({
         type: 'error',
-        text1: 'Empty Cart',
-        text2: 'Your cart is empty. Please add items to cart first.',
+        text1: t('Empty Cart'),
+        text2: t('Your cart is empty. Please add items to cart first.'),
       });
       return;
     }
@@ -183,7 +185,7 @@ const DeliveryDetails = ({ navigation, route }) => {
     try {
       // Prepare order data
       const deliveryAddress = `${formData.deliveryAddress}, ${formData.city}, ${formData.state}`;
-      
+
       // Convert date to ISO format if provided, otherwise use default (3 days from now)
       let deliveryExpectedDate;
       if (formData.preferredDeliveryDate) {
@@ -210,21 +212,21 @@ const DeliveryDetails = ({ navigation, route }) => {
       };
 
       // Place order for each cart item
-      const placeOrderPromises = cartItems.map(item => 
+      const placeOrderPromises = cartItems.map(item =>
         cartService.placeOrder(item.leadId, orderData)
       );
 
       const results = await Promise.all(placeOrderPromises);
-      
+
       // Check if all orders were placed successfully
       const failedOrders = results.filter(r => !r.success);
-      
+
       if (failedOrders.length > 0) {
         const errorMessages = failedOrders.map(r => r.error).join(', ');
         Toast.show({
           type: 'error',
-          text1: 'Order Placement Failed',
-          text2: `Some orders could not be placed: ${errorMessages}`,
+          text1: t('Enquiry Submission Failed'),
+          text2: `${t('Some enquiries could not be submitted:')} ${errorMessages}`,
         });
         // Refresh cart and navigate to orders
         await fetchCartItems();
@@ -236,8 +238,8 @@ const DeliveryDetails = ({ navigation, route }) => {
         await fetchCartItems();
         Toast.show({
           type: 'success',
-          text1: 'Order Placed Successfully!',
-          text2: 'Your order has been placed. Please wait for vendor approval. You can complete the payment from the Orders section once the order is approved.',
+          text1: t('Enquiry Submitted Successfully!'),
+          text2: t('Your enquiry has been submitted. Please wait for vendor approval. You can complete the payment from the Orders section once the enquiry is approved.'),
         });
         setTimeout(() => {
           navigation.navigate('MainApp', { screen: 'Orders' });
@@ -247,8 +249,8 @@ const DeliveryDetails = ({ navigation, route }) => {
       console.error('Error placing orders:', error);
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Failed to place orders. Please try again.',
+        text1: t('Error'),
+        text2: t('Failed to submit enquiry. Please try again.'),
       });
     } finally {
       setLoading(false);
@@ -304,46 +306,46 @@ const DeliveryDetails = ({ navigation, route }) => {
       >
         {/* Personal Information Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-          
-          {renderInputField('fullName', 'Full Name', 'Enter your full name', { required: true })}
-          
-          {renderInputField('phoneNumber', 'Receiver Phone Number', 'Enter receiver phone number', {
+          <Text style={styles.sectionTitle}>{t('Personal Information')}</Text>
+
+          {renderInputField('fullName', t('Full Name'), t('Enter your full name'), { required: true })}
+
+          {renderInputField('phoneNumber', t('Receiver Phone Number'), t('Enter receiver phone number'), {
             required: true,
             keyboardType: 'phone-pad',
             maxLength: 10,
           })}
-          
-          {renderInputField('email', 'Email', 'Enter your email (optional)', {
+
+          {renderInputField('email', t('Email'), t('Enter your email (optional)'), {
             keyboardType: 'email-address',
           })}
         </View>
 
         {/* Delivery Address Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Delivery Address</Text>
-          
-          {renderInputField('deliveryAddress', 'Delivery Address', 'Enter complete delivery address with landmarks', {
+          <Text style={styles.sectionTitle}>{t('Delivery Address')}</Text>
+
+          {renderInputField('deliveryAddress', t('Delivery Address'), t('Enter complete delivery address with landmarks'), {
             required: true,
             multiline: true,
             numberOfLines: 4,
             maxLength: 500,
           })}
-          
-          {renderInputField('city', 'City', 'City', { required: true })}
-          
-          {renderInputField('state', 'State', 'State', { required: true })}
-          
-          {renderInputField('pinCode', 'PIN Code', '6-digit PIN code', {
+
+          {renderInputField('city', t('City'), t('City'), { required: true })}
+
+          {renderInputField('state', t('State'), t('State'), { required: true })}
+
+          {renderInputField('pinCode', t('PIN Code'), t('6-digit PIN code'), {
             required: true,
             keyboardType: 'number-pad',
             maxLength: 6,
           })}
-          
+
           {/* Date Picker for Delivery Date */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>
-              Preferred Delivery Date <Text style={styles.optional}>(optional)</Text>
+              {t('Preferred Delivery Date')} <Text style={styles.optional}>{t('(optional)')}</Text>
             </Text>
             <TouchableOpacity
               style={[
@@ -357,13 +359,13 @@ const DeliveryDetails = ({ navigation, route }) => {
                 styles.datePickerText,
                 !formData.preferredDeliveryDate && styles.datePickerPlaceholder
               ]}>
-                {formData.preferredDeliveryDate 
-                  ? new Date(formData.preferredDeliveryDate).toLocaleDateString('en-IN', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })
-                  : 'Select delivery date (optional)'}
+                {formData.preferredDeliveryDate
+                  ? new Date(formData.preferredDeliveryDate).toLocaleDateString(t('en-IN'), {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                  : t('Select delivery date (optional)')}
               </Text>
               <Icon name="calendar" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
@@ -371,7 +373,7 @@ const DeliveryDetails = ({ navigation, route }) => {
               <Text style={styles.errorText}>{errors.preferredDeliveryDate}</Text>
             )}
           </View>
-          
+
           {showDatePicker && (
             <DateTimePicker
               value={formData.preferredDeliveryDate ? new Date(formData.preferredDeliveryDate) : new Date()}
@@ -400,26 +402,26 @@ const DeliveryDetails = ({ navigation, route }) => {
                 style={styles.datePickerCancelButton}
                 onPress={() => setShowDatePicker(false)}
               >
-                <Text style={styles.datePickerCancelText}>Cancel</Text>
+                <Text style={styles.datePickerCancelText}>{t('Cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.datePickerDoneButton}
                 onPress={() => setShowDatePicker(false)}
               >
-                <Text style={styles.datePickerDoneText}>Done</Text>
+                <Text style={styles.datePickerDoneText}>{t('Done')}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
-        {/* Place Order Button */}
+        {/* Send Enquiry Button */}
         <TouchableOpacity
           style={[styles.placeOrderButton, loading && styles.placeOrderButtonDisabled]}
           onPress={handlePlaceOrder}
           disabled={loading}
         >
           <LinearGradient
-            colors={['#723FED', '#3B58EB']}
+            colors={colors.primaryGradient}
             style={styles.placeOrderButtonGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -429,7 +431,7 @@ const DeliveryDetails = ({ navigation, route }) => {
             ) : (
               <>
                 <Icon name="check-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.placeOrderButtonText}>Place Order</Text>
+                <Text style={styles.placeOrderButtonText}>{t('Send Enquiry')}</Text>
               </>
             )}
           </LinearGradient>
@@ -572,10 +574,12 @@ const styles = StyleSheet.create({
   },
   placeOrderButtonText: {
     fontSize: 18,
-    fontWeight: '700',
-    color: colors.white,
+    fontWeight: '800',
+    color: '#ffffff',
   },
 });
 
 export default DeliveryDetails;
+
+
 

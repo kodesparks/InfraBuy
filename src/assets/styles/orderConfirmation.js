@@ -1,9 +1,9 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import { colors, typography } from './global';
+import { typography, spacing, borderRadius, shadows } from './global';
 
 const { width, height } = Dimensions.get('window');
 
-export default StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -11,20 +11,13 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: colors.white,
-    borderRadius: 20,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.xl,
     padding: 30,
     width: width * 0.85,
     maxWidth: 350,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
+    ...shadows.cloud,
   },
   closeButton: {
     position: 'absolute',
@@ -33,11 +26,11 @@ export default StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   iconContainer: {
     marginBottom: 20,
@@ -45,36 +38,35 @@ export default StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 15,
     textAlign: 'center',
   },
   message: {
     fontSize: 16,
-    color: colors.darkGray,
+    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 20,
   },
   orderSummary: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.xl,
     padding: 16,
     marginBottom: 25,
     width: '100%',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+    ...shadows.cloud,
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: 10,
     textAlign: 'center',
   },
   summaryText: {
     fontSize: 14,
-    color: colors.darkGray,
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 5,
   },
@@ -96,4 +88,6 @@ export default StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
   },
-}); 
+});
+
+export default createStyles;

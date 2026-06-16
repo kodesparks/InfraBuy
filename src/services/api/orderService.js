@@ -16,14 +16,14 @@ export const orderService = {
     try {
       const url = API_ENDPOINTS.orders.getAll.url;
       const queryParams = new URLSearchParams();
-      
+
       if (params.status) queryParams.append('status', params.status);
       if (params.page) queryParams.append('page', params.page.toString());
       if (params.limit) queryParams.append('limit', params.limit.toString());
-      
+
       const fullUrl = queryParams.toString() ? `${url}?${queryParams.toString()}` : url;
       const response = await apiClient.get(fullUrl);
-      
+
       if (response.data?.success !== false && response.status === 200) {
         return {
           success: true,
@@ -41,7 +41,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error fetching orders:', error);
+      console.log('⚠️ Could not fetch orders (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load orders. Please try again.',
@@ -59,13 +59,13 @@ export const orderService = {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.getDetails.url, { leadId });
       const response = await apiClient.get(url);
-      
+
       if (response.data?.success !== false && response.status === 200) {
         // API returns: { order, paymentInfo, statusHistory, deliveryInfo, message, ... }
         // Return the full response data to preserve all fields including paymentInfo
         const apiData = response.data;
         const orderData = apiData?.order || apiData?.data?.order || apiData?.data || apiData;
-        
+
         // Merge order data with other top-level fields (paymentInfo, statusHistory, deliveryInfo)
         const fullData = {
           ...orderData,
@@ -74,7 +74,7 @@ export const orderService = {
           statusHistory: apiData?.statusHistory || orderData?.statusHistory,
           deliveryInfo: apiData?.deliveryInfo || orderData?.deliveryInfo,
         };
-        
+
         return {
           success: true,
           data: fullData,
@@ -88,7 +88,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error fetching order details:', error);
+      console.log('⚠️ Could not fetch order details (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load order details. Please try again.',
@@ -106,7 +106,7 @@ export const orderService = {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.getTracking.url, { leadId });
       const response = await apiClient.get(url);
-      
+
       console.log('📡 Raw tracking response:', {
         status: response.status,
         hasData: !!response.data,
@@ -114,7 +114,7 @@ export const orderService = {
         hasTracking: !!response.data?.tracking,
         trackingKeys: response.data?.tracking ? Object.keys(response.data.tracking) : [],
       });
-      
+
       if (response.data?.success !== false && response.status === 200) {
         const trackingData = response.data?.tracking || response.data?.data || response.data;
         console.log('✅ Extracted tracking data:', {
@@ -122,7 +122,7 @@ export const orderService = {
           deliveryKeys: trackingData?.delivery ? Object.keys(trackingData.delivery) : [],
           driverName: trackingData?.delivery?.driverName,
         });
-        
+
         return {
           success: true,
           data: trackingData,
@@ -136,7 +136,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('❌ Error fetching tracking:', error);
+      console.log('⚠️ Could not fetch tracking (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load tracking information. Please try again.',
@@ -154,7 +154,7 @@ export const orderService = {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.checkChangeEligibility.url, { leadId });
       const response = await apiClient.get(url);
-      
+
       if (response.data?.success !== false && response.status === 200) {
         return {
           success: true,
@@ -174,7 +174,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error checking eligibility:', error);
+      console.log('⚠️ Could not check eligibility (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to check eligibility. Please try again.',
@@ -198,7 +198,7 @@ export const orderService = {
         newAddress: addressData.newAddress,
         reason: addressData.reason || '',
       });
-      
+
       if (response.data?.success !== false && response.status === 200) {
         return {
           success: true,
@@ -213,7 +213,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error changing address:', error);
+      console.log('⚠️ Could not change address (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to update address. Please try again.',
@@ -237,7 +237,7 @@ export const orderService = {
         newDeliveryDate: dateData.newDeliveryDate,
         reason: dateData.reason || '',
       });
-      
+
       if (response.data?.success !== false && response.status === 200) {
         return {
           success: true,
@@ -252,10 +252,45 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error changing delivery date:', error);
+      console.log('⚠️ Could not change delivery date (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to update delivery date. Please try again.',
+        data: null,
+      };
+    }
+  },
+
+  /**
+   * Process payment for an order
+   * @param {string} leadId - Order ID
+   * @param {Object} paymentData - Payment details
+   * @returns {Promise<Object>} Processed payment response
+   */
+  async processPayment(leadId, paymentData) {
+    try {
+      const url = buildUrl(API_ENDPOINTS.orders.processPayment.url, { leadId });
+      const response = await apiClient.post(url, paymentData);
+
+      if (response.data?.success !== false && response.status === 200) {
+        return {
+          success: true,
+          data: response.data?.order || response.data?.data || response.data,
+          message: response.data?.message || 'Payment processed successfully',
+        };
+      }
+
+      return {
+        success: false,
+        error: response.data?.error || response.data?.message || 'Failed to process payment',
+        data: null,
+      };
+    } catch (error) {
+      console.log('⚠️ Could not process payment (Network/Server error):', error.message || error);
+      const validationDetails = error.response?.data?.errors ? JSON.stringify(error.response.data.errors) : '';
+      return {
+        success: false,
+        error: (error.response?.data?.message || 'Unable to process payment.') + (validationDetails ? ` Details: ${validationDetails}` : ''),
         data: null,
       };
     }
@@ -270,7 +305,7 @@ export const orderService = {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.getPaymentStatus.url, { leadId });
       const response = await apiClient.get(url);
-      
+
       if (response.data?.success !== false && response.status === 200) {
         return {
           success: true,
@@ -288,7 +323,7 @@ export const orderService = {
         data: null,
       };
     } catch (error) {
-      console.error('Error fetching payment status:', error);
+      console.log('⚠️ Could not fetch payment status (Network/Server error):', error.message || error);
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to load payment status. Please try again.',
@@ -400,4 +435,6 @@ export const orderService = {
     };
   },
 };
+
+
 

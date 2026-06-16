@@ -2,9 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
-import styles from '../../assets/styles/orderConfirmation';
+import { useTranslation } from 'react-i18next';
+import createStyles from '../../assets/styles/orderConfirmation';
+import { useTheme } from '../../context/ThemeContext';
 
 const OrderConfirmation = ({ visible, onClose, onContinueShopping, orderDetails }) => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   if (!visible) return null;
 
   return (
@@ -27,11 +32,11 @@ const OrderConfirmation = ({ visible, onClose, onContinueShopping, orderDetails 
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Thank you!</Text>
+          <Text style={styles.title}>{t('Thank you!')}</Text>
 
           {/* Message */}
           <Text style={styles.message}>
-            Your order has been placed successfully! Our representative will contact you soon.
+            {t('Enquiry submitted successfully! Our representative will contact you soon.')}
           </Text>
 
           {/* Order Summary */}
@@ -52,12 +57,12 @@ const OrderConfirmation = ({ visible, onClose, onContinueShopping, orderDetails 
             colors={['#3B82F6', '#1D4ED8']}
             style={styles.continueButton}
           >
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.continueButtonInner}
               onPress={onContinueShopping}
             >
               <Icon name="shopping-bag" size={20} color="white" />
-              <Text style={styles.continueButtonText}>Continue Shopping</Text>
+              <Text style={styles.continueButtonText}>{t('Continue Shopping')}</Text>
             </TouchableOpacity>
           </LinearGradient>
         </View>
@@ -66,4 +71,5 @@ const OrderConfirmation = ({ visible, onClose, onContinueShopping, orderDetails 
   );
 };
 
-export default OrderConfirmation; 
+export default OrderConfirmation;
+

@@ -12,8 +12,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import { updateMobile } from '../../services/api';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
+  const { t } = useTranslation();
   const [phone, setPhone] = useState(user?.phone || '');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -31,9 +33,9 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
     const newErrors = {};
 
     if (!phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = t('Phone number is required');
     } else if (!/^\d{10}$/.test(phone.trim())) {
-      newErrors.phone = 'Phone number must be exactly 10 digits';
+      newErrors.phone = t('Phone number must be exactly 10 digits');
     }
 
     setErrors(newErrors);
@@ -46,12 +48,12 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User ID not found');
+      Alert.alert(t('Error'), t('User ID not found'));
       return;
     }
 
     if (phone.trim() === user.phone) {
-      Alert.alert('Info', 'Phone number is the same as current phone');
+      Alert.alert(t('Info'), t('Phone number is the same as current phone'));
       return;
     }
 
@@ -66,8 +68,8 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
       if (result.success) {
         Toast.show({
           type: 'success',
-          text1: 'Success',
-          text2: result.message || 'Mobile number updated successfully',
+          text1: t('Success!'),
+          text2: result.message || t('Mobile number updated successfully'),
         });
         // Pass updated user data directly to avoid API call
         onSuccess(result.data);
@@ -75,15 +77,15 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Error',
-          text2: result.error?.message || 'Failed to update mobile number',
+          text1: t('Error'),
+          text2: result.error?.message || t('Failed to update mobile number'),
         });
       }
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Failed to update mobile number',
+        text1: t('Error'),
+        text2: t('Failed to update mobile number'),
       });
     } finally {
       setLoading(false);
@@ -100,7 +102,7 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Update Mobile Number</Text>
+            <Text style={styles.modalTitle}>{t('Update Mobile Number')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Icon name="x" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -108,7 +110,7 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>New Phone Number *</Text>
+              <Text style={styles.label}>{t('New Phone Number *')}</Text>
               <TextInput
                 style={[styles.input, errors.phone && styles.inputError]}
                 value={phone}
@@ -119,7 +121,7 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
                     setErrors({ ...errors, phone: null });
                   }
                 }}
-                placeholder="Enter 10-digit phone number"
+                placeholder={t('Enter 10-digit phone number')}
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="phone-pad"
                 maxLength={10}
@@ -128,17 +130,17 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Current Password (Optional)</Text>
+              <Text style={styles.label}>{t('Current Password (Optional)')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Enter your password for verification"
+                placeholder={t('Enter your password for verification')}
                 placeholderTextColor={colors.textSecondary}
                 secureTextEntry
               />
               <Text style={styles.helperText}>
-                Some accounts may require password verification
+                {t('Some accounts may require password verification')}
               </Text>
             </View>
           </View>
@@ -149,7 +151,7 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.submitButton]}
@@ -159,7 +161,7 @@ const EditMobileModal = ({ visible, onClose, user, onSuccess }) => {
               {loading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Update Mobile</Text>
+                <Text style={styles.submitButtonText}>{t('Update Mobile')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -261,4 +263,7 @@ const styles = {
 };
 
 export default EditMobileModal;
+
+
+
 

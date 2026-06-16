@@ -120,3 +120,109 @@ export const otpVerify = async (phone, otp) => {
     };
   }
 };
+
+/**
+ * Request password reset via Email (generates secure link)
+ * @param {string} email
+ */
+export const forgotPassword = async (email) => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.auth.forgotPassword.url, {
+      email: String(email).trim().toLowerCase(),
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Failed to send password reset link. Please try again.',
+      },
+    };
+  }
+};
+
+/**
+ * Request password reset via Mobile OTP
+ * @param {string} phone - 10-digit phone number
+ */
+export const forgotPasswordMobile = async (phone) => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.auth.forgotPasswordMobile.url, {
+      phone: String(phone).trim(),
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Failed to send OTP. Please try again.',
+      },
+    };
+  }
+};
+
+/**
+ * Verify mobile forgot password OTP to receive a reset token
+ * @param {string} phone
+ * @param {string} otp
+ */
+export const verifyForgotOtp = async (phone, otp) => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.auth.verifyForgotOtp.url, {
+      phone: String(phone).trim(),
+      otp: String(otp).trim(),
+    });
+    if (response.data && response.data.token) {
+      return {
+        success: true,
+        data: response.data,
+      };
+    }
+    return {
+      success: false,
+      error: {
+        message: response.data?.message || 'Verification failed.',
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Invalid or expired OTP. Please try again.',
+      },
+    };
+  }
+};
+
+/**
+ * Reset password using reset token (unified endpoint)
+ * @param {string} token
+ * @param {string} newPassword
+ */
+export const resetPassword = async (token, newPassword) => {
+  try {
+    const response = await apiClient.post(API_ENDPOINTS.auth.resetPassword.url, {
+      token: String(token).trim(),
+      newPassword,
+    });
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: {
+        message: error.response?.data?.message || 'Failed to reset password. Please try again.',
+      },
+    };
+  }
+};
+
+

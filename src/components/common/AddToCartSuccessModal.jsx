@@ -2,10 +2,12 @@ import React from 'react';
 import { View, Text, TouchableOpacity, Modal } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
+import { useTranslation } from 'react-i18next';
 import { colors, spacing, borderRadius } from '../../assets/styles/global';
 import styles from '../../assets/styles/addToCartSuccessModal';
 
 const AddToCartSuccessModal = ({ visible, onClose, onContinueShopping, onViewCart, productName, quantity, unit }) => {
+  const { t } = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -28,17 +30,17 @@ const AddToCartSuccessModal = ({ visible, onClose, onContinueShopping, onViewCar
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Item Added to Cart!</Text>
+          <Text style={styles.title}>Item Added to Enquiry!</Text>
 
           {/* Message */}
           <Text style={styles.message}>
-            {productName} ({quantity} {unit}) has been added to your cart successfully.
+            {productName} ({quantity} {unit}) {t('has been added to your enquiry list successfully.')}
           </Text>
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             {/* Continue Shopping Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.continueShoppingButton}
               onPress={onContinueShopping}
             >
@@ -47,17 +49,17 @@ const AddToCartSuccessModal = ({ visible, onClose, onContinueShopping, onViewCar
 
             {/* View Cart Button */}
             <LinearGradient
-              colors={['#723FED', '#3B58EB']}
+              colors={colors.primaryGradient}
               style={styles.viewCartButton}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.viewCartButtonInner}
                 onPress={onViewCart}
               >
                 <Icon name="shopping-cart" size={18} color="white" />
-                <Text style={styles.viewCartText}>View Cart</Text>
+                <Text style={styles.viewCartText}>View Enquiry</Text>
               </TouchableOpacity>
             </LinearGradient>
           </View>
@@ -68,4 +70,6 @@ const AddToCartSuccessModal = ({ visible, onClose, onContinueShopping, onViewCar
 };
 
 export default AddToCartSuccessModal;
+
+
 

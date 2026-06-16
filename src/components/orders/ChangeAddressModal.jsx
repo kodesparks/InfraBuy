@@ -2,10 +2,15 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Alert, ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
+import { spacing, borderRadius } from '../../assets/styles/global';
 import { orderService } from '../../services/api/orderService';
 
 const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
+  const { t } = useTranslation();
+  const { colors, isDarkMode } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, isDarkMode), [colors, isDarkMode]);
   const [newAddress, setNewAddress] = useState('');
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,19 +18,19 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!newAddress.trim()) {
-      newErrors.newAddress = 'New address is required';
+      newErrors.newAddress = t('New address is required');
     } else if (newAddress.length < 10) {
-      newErrors.newAddress = 'Address must be at least 10 characters';
+      newErrors.newAddress = t('Address must be at least 10 characters');
     } else if (newAddress.length > 500) {
-      newErrors.newAddress = 'Address must be less than 500 characters';
+      newErrors.newAddress = t('Address must be less than 500 characters');
     }
-    
+
     if (reason && reason.length > 200) {
-      newErrors.reason = 'Reason must be less than 200 characters';
+      newErrors.reason = t('Reason must be less than 200 characters');
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -36,7 +41,7 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
     }
 
     if (!order?.id && !order?.leadId) {
-      Alert.alert('Error', 'Invalid order information');
+      Alert.alert(t('Error'), t('Invalid order information'));
       return;
     }
 
@@ -49,9 +54,9 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
       });
 
       if (result.success) {
-        Alert.alert('Success', 'Delivery address updated successfully', [
+        Alert.alert(t('Success'), t('Delivery address updated successfully'), [
           {
-            text: 'OK',
+            text: t('OK'),
             onPress: () => {
               setNewAddress('');
               setReason('');
@@ -62,11 +67,11 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
           },
         ]);
       } else {
-        Alert.alert('Error', result.error || 'Failed to update address');
+        Alert.alert(t('Error'), result.error || t('Failed to update address'));
       }
     } catch (error) {
       console.error('Error changing address:', error);
-      Alert.alert('Error', 'Failed to update address. Please try again.');
+      Alert.alert(t('Error'), t('Failed to update address. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -77,12 +82,13 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
       visible={visible}
       transparent={true}
       animationType="slide"
+      statusBarTranslucent={true}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Change Delivery Address</Text>
+            <Text style={styles.title}>{t('Change Delivery Address')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Icon name="x" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -91,10 +97,10 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             {/* Current Address */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Current Address</Text>
+              <Text style={styles.sectionTitle}>{t('Current Address')}</Text>
               <View style={styles.currentInfoBox}>
-                <Text style={styles.currentInfoText}>{order?.deliveryAddress || 'N/A'}</Text>
-                <Text style={styles.currentInfoText}>PIN: {order?.deliveryPincode || 'N/A'}</Text>
+                <Text style={styles.currentInfoText}>{order?.deliveryAddress || t('N/A')}</Text>
+                <Text style={styles.currentInfoText}>{t('PIN:')} {order?.deliveryPincode || t('N/A')}</Text>
               </View>
             </View>
 
@@ -102,14 +108,14 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
             <View style={styles.warningBox}>
               <Icon name="alert-triangle" size={20} color="#F59E0B" />
               <Text style={styles.warningText}>
-                Address changes are only allowed within 48 hours of order placement
+                {t('Address changes are only allowed within 48 hours of order placement')}
               </Text>
             </View>
 
             {/* New Address Form */}
             <View style={styles.section}>
               <Text style={styles.label}>
-                New Address <Text style={styles.required}>*</Text>
+                {t('New Address')} <Text style={styles.required}>*</Text>
               </Text>
               <TextInput
                 style={[styles.textArea, errors.newAddress && styles.inputError]}
@@ -120,7 +126,7 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
                     setErrors({ ...errors, newAddress: null });
                   }
                 }}
-                placeholder="Enter complete delivery address (10-500 characters)"
+                placeholder={t('Enter complete delivery address (10-500 characters)')}
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={4}
@@ -134,7 +140,7 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
 
             {/* Reason */}
             <View style={styles.section}>
-              <Text style={styles.label}>Reason (Optional)</Text>
+              <Text style={styles.label}>{t('Reason (Optional)')}</Text>
               <TextInput
                 style={[styles.textArea, errors.reason && styles.inputError]}
                 value={reason}
@@ -144,7 +150,7 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
                     setErrors({ ...errors, reason: null });
                   }
                 }}
-                placeholder="Why are you changing the address? (max 200 characters)"
+                placeholder={t('Why are you changing the address? (max 200 characters)')}
                 placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
@@ -162,7 +168,7 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
                 onPress={onClose}
                 disabled={loading}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.updateButton, loading && styles.updateButtonDisabled]}
@@ -170,12 +176,12 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
                 disabled={loading}
               >
                 <LinearGradient
-                  colors={loading ? ['#9CA3AF', '#6B7280'] : ['#723FED', '#3B58EB']}
+                  colors={loading ? ['#9CA3AF', '#6B7280'] : colors.primaryGradient}
                   style={styles.updateButtonGradient}
                 >
                   <Icon name="check" size={18} color="#FFFFFF" />
                   <Text style={styles.updateButtonText}>
-                    {loading ? 'Updating...' : 'Update Address'}
+                    {loading ? t('Updating...') : t('Update Address')}
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -187,18 +193,20 @@ const ChangeAddressModal = ({ visible, onClose, order, onSuccess }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (colors, isDarkMode) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     justifyContent: 'flex-end',
   },
   content: {
-    backgroundColor: colors.white,
+    backgroundColor: isDarkMode ? colors.card : colors.background,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
     maxHeight: '90%',
     padding: spacing.lg,
+    borderWidth: isDarkMode ? 1.5 : 0,
+    borderTopColor: 'rgba(255, 255, 255, 0.15)',
   },
   header: {
     flexDirection: 'row',
@@ -209,7 +217,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   section: {
     marginBottom: spacing.lg,
@@ -217,22 +225,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.sm,
   },
   currentInfoBox: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : '#F3F4F6',
     padding: spacing.md,
     borderRadius: borderRadius.md,
   },
   currentInfoText: {
     fontSize: 14,
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   warningBox: {
     flexDirection: 'row',
-    backgroundColor: '#FEF3C7',
+    backgroundColor: isDarkMode ? 'rgba(245, 158, 11, 0.15)' : '#FEF3C7',
     padding: spacing.md,
     borderRadius: borderRadius.md,
     marginBottom: spacing.lg,
@@ -241,13 +249,13 @@ const styles = StyleSheet.create({
   warningText: {
     flex: 1,
     fontSize: 14,
-    color: '#92400E',
+    color: isDarkMode ? '#FBBF24' : '#92400E',
     lineHeight: 20,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
     marginBottom: spacing.xs,
   },
   required: {
@@ -255,11 +263,12 @@ const styles = StyleSheet.create({
   },
   textArea: {
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.md,
     fontSize: 16,
-    color: colors.text,
+    color: colors.textPrimary,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'transparent',
     minHeight: 100,
     textAlignVertical: 'top',
   },
@@ -282,12 +291,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.lightGray,
+    borderColor: colors.border,
+    backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text,
+    color: colors.textPrimary,
   },
   updateButton: {
     flex: 1,
@@ -305,11 +315,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   updateButtonText: {
-    color: colors.white,
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
 });
 
 export default ChangeAddressModal;
+
+
 

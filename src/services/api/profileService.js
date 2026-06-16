@@ -11,7 +11,7 @@ export const getUserProfile = async () => {
   try {
     console.log('🌐 Fetching user profile...');
     const response = await apiClient.get(API_ENDPOINTS.auth.getUserDetails.url);
-    
+
     if (response.data) {
       console.log('✅ Profile fetched successfully:', response.data);
       return {
@@ -19,7 +19,7 @@ export const getUserProfile = async () => {
         data: response.data,
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -39,8 +39,8 @@ export const getUserProfile = async () => {
         },
       };
     }
-    
-    console.error('❌ Error fetching profile:', error);
+
+    console.log('⚠️ Could not fetch profile (Network/Server error):', error.message || error);
     return {
       success: false,
       error: {
@@ -61,7 +61,7 @@ export const updateProfile = async (userId, profileData) => {
     console.log('🌐 Updating profile...', { userId, profileData });
     const url = API_ENDPOINTS.user.updateProfile.url.replace('{userId}', userId);
     const response = await apiClient.put(url, profileData);
-    
+
     if (response.data) {
       console.log('✅ Profile updated successfully:', response.data);
       // Return the user data from the response (response.data.user or response.data)
@@ -72,7 +72,7 @@ export const updateProfile = async (userId, profileData) => {
         message: response.data.message || 'Profile updated successfully',
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -101,7 +101,7 @@ export const updateEmail = async (userId, emailData) => {
     console.log('🌐 Updating email...', { userId, emailData });
     const url = API_ENDPOINTS.user.updateEmail.url.replace('{userId}', userId);
     const response = await apiClient.put(url, emailData);
-    
+
     if (response.data) {
       console.log('✅ Email updated successfully:', response.data);
       // Return the user data from the response
@@ -112,7 +112,7 @@ export const updateEmail = async (userId, emailData) => {
         message: response.data.message || 'Email updated successfully',
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -141,7 +141,7 @@ export const updateMobile = async (userId, mobileData) => {
     console.log('🌐 Updating mobile...', { userId, mobileData });
     const url = API_ENDPOINTS.user.updateMobile.url.replace('{userId}', userId);
     const response = await apiClient.put(url, mobileData);
-    
+
     if (response.data) {
       console.log('✅ Mobile updated successfully:', response.data);
       // Return the user data from the response
@@ -152,7 +152,7 @@ export const updateMobile = async (userId, mobileData) => {
         message: response.data.message || 'Mobile number updated successfully',
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -183,7 +183,7 @@ export const changePassword = async (currentPassword, newPassword) => {
       currentPassword,
       newPassword,
     });
-    
+
     if (response.data) {
       console.log('✅ Password changed successfully:', response.data);
       return {
@@ -191,7 +191,7 @@ export const changePassword = async (currentPassword, newPassword) => {
         message: response.data.message || 'Password changed successfully',
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -219,7 +219,7 @@ export const uploadAvatar = async (userId, imageUri) => {
   try {
     console.log('🌐 Uploading avatar...', { userId, imageUri });
     const url = API_ENDPOINTS.user.uploadAvatar.url.replace('{userId}', userId);
-    
+
     // Create FormData for multipart/form-data
     const formData = new FormData();
     formData.append('avatar', {
@@ -227,13 +227,13 @@ export const uploadAvatar = async (userId, imageUri) => {
       type: 'image/jpeg',
       name: 'avatar.jpg',
     });
-    
+
     const response = await apiClient.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-    
+
     if (response.data) {
       console.log('✅ Avatar uploaded successfully:', response.data);
       // Return the user data from the response
@@ -245,7 +245,7 @@ export const uploadAvatar = async (userId, imageUri) => {
         avatarUrl: response.data.avatarUrl || userData?.avatar,
       };
     }
-    
+
     return {
       success: false,
       error: {
@@ -264,4 +264,6 @@ export const uploadAvatar = async (userId, imageUri) => {
     };
   }
 };
+
+
 

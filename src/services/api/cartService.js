@@ -20,10 +20,10 @@ export const cartService = {
   async addToCart(params) {
     try {
       const url = API_ENDPOINTS.orders.addToCart.url;
-      
+
       // Calculate delivery expected date (3 days from now)
       const deliveryDate = params.deliveryExpectedDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-      
+
       const requestData = {
         itemCode: params.itemCode,
         qty: params.qty || 1,
@@ -35,7 +35,7 @@ export const cartService = {
       };
 
       const response = await apiClient.post(url, requestData);
-      
+
       console.log('Add to cart API response:', {
         status: response.status,
         success: response.data?.success,
@@ -44,24 +44,24 @@ export const cartService = {
         hasError: !!response.data?.error,
         data: response.data
       });
-      
+
       // Default to success if status is 200 and no explicit error
       // Only treat as error if there's an explicit error field or success is explicitly false
-      const hasExplicitError = response.data?.error && 
-                               response.data.error !== '' && 
-                               !response.data.error.toLowerCase().includes('success');
+      const hasExplicitError = response.data?.error &&
+        response.data.error !== '' &&
+        !response.data.error.toLowerCase().includes('success');
       const hasExplicitFailure = response.data?.success === false;
       const isHttpSuccess = response.status === 200 || response.status === 201;
-      
+
       // Treat as success if:
       // 1. Explicit success flag is true, OR
       // 2. HTTP status is 200/201 AND no explicit error AND (has order data OR has message OR success not explicitly false)
-      const isSuccess = response.data?.success === true || 
-                       (isHttpSuccess && 
-                        !hasExplicitError && 
-                        !hasExplicitFailure &&
-                        (response.data?.order || response.data?.message || response.data));
-      
+      const isSuccess = response.data?.success === true ||
+        (isHttpSuccess &&
+          !hasExplicitError &&
+          !hasExplicitFailure &&
+          (response.data?.order || response.data?.message || response.data));
+
       if (isSuccess) {
         return {
           success: true,
@@ -99,18 +99,20 @@ export const cartService = {
         status: 'pending',
         page: params.page || 1,
         limit: params.limit || 50,
+        // Allow for custom parameters like cache-busting timestamp
+        ...params
       };
 
       const response = await apiClient.get(url, { params: queryParams });
-      
+
       // Handle both response formats: with success field or without
       if (response.data?.success !== false && response.status === 200) {
         // Filter orders to only include pending status (in case API doesn't filter)
         const allOrders = response.data.orders || response.data.data?.orders || [];
-        const pendingOrders = allOrders.filter(order => 
+        const pendingOrders = allOrders.filter(order =>
           order.orderStatus === 'pending' || order.status === 'pending'
         );
-        
+
         return {
           success: true,
           data: {
@@ -147,7 +149,7 @@ export const cartService = {
   async updateQuantity(leadId, params) {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.updateOrder.url, { leadId });
-      
+
       const requestData = {
         items: [
           {
@@ -158,12 +160,12 @@ export const cartService = {
       };
 
       const response = await apiClient.put(url, requestData);
-      
+
       // Treat as success if status is 200 and no explicit error
       const isHttpSuccess = response.status === 200 || response.status === 201;
       const hasExplicitError = response.data?.error && response.data.error !== '';
       const hasExplicitFailure = response.data?.success === false;
-      
+
       if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
@@ -188,21 +190,37 @@ export const cartService = {
   },
 
   /**
-   * Remove item from cart (delete order)
-   * @param {string} leadId - Order leadId (e.g., 'CT-007')
+   * Remove item from cart (deletes a specific product from an order)
+   * @param {string} leadId - Order ID (e.g., 'CT-007' or database _id)
+   * @param {string} itemCode - Product ID to remove (MongoDB ObjectId)
    * @returns {Promise<Object>} Success/error response
    */
-  async removeFromCart(leadId) {
+  async removeFromCart(leadId, itemCode) {
     try {
-      const url = buildUrl(API_ENDPOINTS.orders.removeFromCart.url, { leadId });
-
-      const response = await apiClient.delete(url);
+      const url = buildUrl(API_ENDPOINTS.orders.removeSpecificItemFromCart.url, { leadId });
       
+      console.log('🗑️ REMOVING SPECIFIC ITEM FROM CART:', {
+        leadId,
+        itemCode,
+        url,
+        fullUrl: `${apiClient.defaults.baseURL}${url}`
+      });
+
+      // The backend DELETE /customer/orders/:leadId/items REQUIRES itemCode in body
+      const response = await apiClient.delete(url, {
+        data: { itemCode }
+      });
+
+      console.log('🗑️ REMOVAL RESPONSE:', {
+        status: response.status,
+        data: response.data,
+      });
+
       // Treat as success if status is 200/204 and no explicit error
       const isHttpSuccess = response.status === 200 || response.status === 201 || response.status === 204;
       const hasExplicitError = response.data?.error && response.data.error !== '';
       const hasExplicitFailure = response.data?.success === false;
-      
+
       if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
@@ -216,9 +234,50 @@ export const cartService = {
       };
     } catch (error) {
       console.error('Error removing from cart:', error);
+      
+      const apiErrorMessage = error.response?.data?.message || error.response?.data?.error || error.response?.data?.data?.message;
+      
       return {
         success: false,
-        error: error.response?.data?.message || error.response?.data?.error || 'Unable to remove item from cart. Please try again.',
+        error: apiErrorMessage || 'Unable to remove item from cart. Please try again.',
+      };
+    }
+  },
+
+  /**
+   * Update an order (e.g., used for manual payments where we PUT directly to the order endpoint)
+   * @param {string} leadId - Order leadId (e.g., 'CT-007')
+   * @param {Object} updateData - Update payload
+   * @returns {Promise<Object>} Updated order data
+   */
+  async updateOrder(leadId, updateData) {
+    try {
+      const url = buildUrl(API_ENDPOINTS.orders.updateOrder.url, { leadId });
+      const response = await apiClient.put(url, updateData);
+
+      const isHttpSuccess = response.status === 200 || response.status === 201;
+      const hasExplicitError = response.data?.error && response.data.error !== '';
+      const hasExplicitFailure = response.data?.success === false;
+
+      if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
+        return {
+          success: true,
+          data: response.data.order || response.data,
+          message: response.data.message || 'Order updated successfully',
+        };
+      }
+
+      return {
+        success: false,
+        error: response.data?.error || response.data?.message || 'Failed to update order',
+        data: null,
+      };
+    } catch (error) {
+      console.error('Error updating order:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || error.response?.data?.error || 'Unable to update order. Please try again.',
+        data: null,
       };
     }
   },
@@ -233,12 +292,12 @@ export const cartService = {
       const url = API_ENDPOINTS.orders.clearCart.url;
 
       const response = await apiClient.delete(url);
-      
+
       // Treat as success if status is 200/204 and no explicit error
       const isHttpSuccess = response.status === 200 || response.status === 201 || response.status === 204;
       const hasExplicitError = response.data?.error && response.data.error !== '';
       const hasExplicitFailure = response.data?.success === false;
-      
+
       if (response.data?.success === true || (isHttpSuccess && !hasExplicitError && !hasExplicitFailure)) {
         return {
           success: true,
@@ -254,13 +313,13 @@ export const cartService = {
       };
     } catch (error) {
       console.error('Error clearing cart via API endpoint:', error);
-      
+
       // If 404 error and we have cart items, try clearing them individually as fallback
       if (error.response?.status === 404 && cartItems && cartItems.length > 0) {
         console.log('Clear endpoint not found (404). Attempting to clear cart items individually...');
         return await this.clearCartFallback(cartItems);
       }
-      
+
       return {
         success: false,
         error: error.response?.data?.message || error.response?.data?.error || 'Unable to clear cart. Please try again.',
@@ -289,7 +348,7 @@ export const cartService = {
             continue;
           }
 
-          const result = await this.removeFromCart(leadId);
+          const result = await this.removeFromCart(leadId, item.itemCode);
           if (result.success) {
             successCount++;
             clearedItems.push({
@@ -337,7 +396,7 @@ export const cartService = {
       const url = API_ENDPOINTS.orders.getCartSummary.url;
 
       const response = await apiClient.get(url);
-      
+
       if (response.data?.success) {
         return {
           success: true,
@@ -369,56 +428,69 @@ export const cartService = {
   transformOrderToCartItem(order) {
     if (!order || !order.items || order.items.length === 0) {
       console.warn('⚠️ Invalid order structure:', order);
-      return null;
+      return [];
     }
 
-    const item = order.items[0];
-    const itemCode = item.itemCode || {};
-    
-    // Extract pricing data
-    const unitPrice = item.unitPrice || 0;
-    const quantity = item.qty || 1;
-    const totalPrice = order.totalAmount || 0;
-    
-    // Calculate delivery charges: totalPrice includes delivery, so subtract item cost
-    const itemSubtotal = unitPrice * quantity;
-    const deliveryCharges = Math.max(0, totalPrice - itemSubtotal);
+    const databaseId = order._id;
+    const readableId = order.leadId || order.formattedLeadId || databaseId;
+    const brand = order.vendorId?.name || 'Unknown';
 
-    // Extract product information
-    const productName = itemCode.itemDescription || itemCode.name || 'Unknown Product';
-    const productImage = itemCode.primaryImage || itemCode.image || null;
-    const brand = order.vendorId?.name || itemCode.brand || 'Unknown';
-    
-    // Extract IDs - important for API calls
-    const leadId = order.leadId || order._id;
-    const itemCodeId = itemCode._id || item.itemCode || itemCode.id;
+    // Calculate total delivery charges for the entire order
+    // If order.deliveryCharges is set, use it. Otherwise, subtract total items subtotal from totalAmount.
+    const totalItemsSubtotal = order.items.reduce((sum, it) => sum + (it.unitPrice || 0) * (it.qty || 1), 0);
+    const orderDeliveryCharges = order.deliveryCharges !== undefined 
+      ? order.deliveryCharges 
+      : Math.max(0, (order.totalAmount || 0) - totalItemsSubtotal);
 
-    const cartItem = {
-      id: leadId,
-      leadId: leadId,
-      orderNumber: order.formattedLeadId || order.leadId || leadId,
-      name: productName,
-      image: productImage,
-      brand: brand,
-      currentPrice: unitPrice,
-      totalPrice: totalPrice,
-      deliveryCharges: deliveryCharges,
-      quantity: quantity,
-      itemCode: itemCodeId, // MongoDB ObjectId for quantity updates
-      category: itemCode.category || '',
-      subCategory: itemCode.subCategory || '',
-      orderStatus: order.orderStatus || order.status || 'pending',
-      vendorId: order.vendorId?._id || '',
-      vendorName: order.vendorId?.name || brand,
-      // Additional fields from API
-      totalQty: order.totalQty || quantity,
-      deliveryPincode: order.deliveryPincode || '',
-      deliveryAddress: order.deliveryAddress || '',
-      // Keep original order data for updates
-      _orderData: order,
-    };
+    return order.items.map((item, index) => {
+      const itemCode = item.itemCode || {};
 
-    return cartItem;
+      // Extract pricing data
+      const unitPrice = item.unitPrice || 0;
+      const quantity = item.qty || 1;
+      const itemSubtotal = unitPrice * quantity;
+
+      // Apportion the delivery charges to the first item of the order only
+      // to avoid duplicating delivery charges when summing item.deliveryCharges in the UI
+      const deliveryCharges = index === 0 ? orderDeliveryCharges : 0;
+      const totalPrice = itemSubtotal + deliveryCharges;
+
+      // Extract product information
+      const productName = itemCode.itemDescription || itemCode.name || 'Unknown Product';
+      const productImage = itemCode.primaryImage || itemCode.image || null;
+
+      const itemCodeId = itemCode._id || item.itemCode || itemCode.id;
+
+      console.log('📦 Transformed Order Item:', {
+        readableId: readableId,
+        databaseId: databaseId,
+        product: productName,
+        itemCode: itemCodeId
+      });
+
+      return {
+        id: databaseId, // Prefer MongoDB _id for API operations
+        leadId: readableId, // Readable ID (e.g. CT-007)
+        orderNumber: readableId,
+        name: productName,
+        image: productImage,
+        brand: order.vendorId?.name || itemCode.brand || brand,
+        currentPrice: unitPrice,
+        totalPrice: totalPrice,
+        deliveryCharges: deliveryCharges,
+        quantity: quantity,
+        itemCode: itemCodeId,
+        category: itemCode.category || '',
+        subCategory: itemCode.subCategory || '',
+        orderStatus: order.orderStatus || order.status || 'pending',
+        vendorId: order.vendorId?._id || '',
+        vendorName: order.vendorId?.name || brand,
+        totalQty: order.totalQty || quantity,
+        deliveryPincode: order.deliveryPincode || '',
+        deliveryAddress: order.deliveryAddress || '',
+        _orderData: order,
+      };
+    });
   },
 
   /**
@@ -434,7 +506,7 @@ export const cartService = {
   async placeOrder(leadId, orderData) {
     try {
       const url = buildUrl(API_ENDPOINTS.orders.placeOrder.url, { leadId });
-      
+
       const requestData = {
         deliveryAddress: orderData.deliveryAddress,
         deliveryPincode: orderData.deliveryPincode,
@@ -447,24 +519,24 @@ export const cartService = {
       };
 
       const response = await apiClient.post(url, requestData);
-      
+
       console.log('Place order API response:', {
         status: response.status,
         success: response.data?.success,
         message: response.data?.message,
         data: response.data
       });
-      
+
       // Default to success if status is 200/201 and no explicit error
-      const hasExplicitError = response.data?.error && 
-                               response.data.error !== '' && 
-                               !response.data.error.toLowerCase().includes('success');
+      const hasExplicitError = response.data?.error &&
+        response.data.error !== '' &&
+        !response.data.error.toLowerCase().includes('success');
       const hasExplicitFailure = response.data?.success === false;
       const isHttpSuccess = response.status === 200 || response.status === 201;
-      
-      const isSuccess = response.data?.success === true || 
-                       (isHttpSuccess && !hasExplicitError && !hasExplicitFailure);
-      
+
+      const isSuccess = response.data?.success === true ||
+        (isHttpSuccess && !hasExplicitError && !hasExplicitFailure);
+
       if (isSuccess) {
         return {
           success: true,
@@ -488,4 +560,6 @@ export const cartService = {
     }
   },
 };
+
+
 

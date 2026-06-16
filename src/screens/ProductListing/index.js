@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, ActivityIndicator, RefreshControl, Dimensions, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, RefreshControl, Dimensions, Modal, FlatList } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Icon from 'react-native-vector-icons/Feather';
 import Toast from 'react-native-toast-message';
-import { colors, typography, spacing, borderRadius } from '../../assets/styles/global';
+import { typography, spacing, borderRadius, shadows } from '../../assets/styles/global';
 import { useAppContext } from '../../context/AppContext';
 import PincodeModal from '../../components/common/PincodeModal';
-import AddToCartSuccessModal from '../../components/common/AddToCartSuccessModal';
 import CustomerCareFooter from '../../components/common/CustomerCareFooter';
 import { inventoryService, mapInventoryItemToProduct } from '../../services/api/inventoryService';
-import productListingStyles from '../../assets/styles/productListing';
+import createProductListingStyles from '../../assets/styles/productListing';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../context/ThemeContext';
+import Skeleton from '../../components/common/Skeleton';
+import CartFloatingPill from '../../components/common/CartFloatingPill';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -21,6 +24,7 @@ const CATEGORY_NAME_MAPPING = {
   'Mixer': 'Concrete Mixer', // Alternative name
   'Iron': 'Iron',
   'Concrete Mixer': 'Concrete Mixer',
+  'Others': 'Concrete Mixer', // Map Others homepage category to Concrete Mixer in DB
 };
 
 // Helper function to get API category name from homepage category name
@@ -31,11 +35,14 @@ const getApiCategoryName = (homepageCategoryName) => {
 };
 
 const ProductListing = ({ navigation, route }) => {
-  const { category } = route.params || { name: 'Products' };
-  
+  const category = route.params?.category || { name: 'Products' };
+  const { colors, isDarkMode } = useTheme();
+  const styles = React.useMemo(() => createAllStyles(colors, isDarkMode), [colors, isDarkMode]);
+
   // State management
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [error, setError] = useState(null);
   const [selectedSubCategory, setSelectedSubCategory] = useState('All');
   const [sortBy, setSortBy] = useState('none'); // 'none', 'low-to-high', 'high-to-low'
@@ -43,13 +50,13 @@ const ProductListing = ({ navigation, route }) => {
   const [favorites, setFavorites] = useState(new Set());
   const [showPincodeModal, setShowPincodeModal] = useState(false);
   const [pagination, setPagination] = useState(null);
-  const [showAddToCartModal, setShowAddToCartModal] = useState(false);
-  const [addedProduct, setAddedProduct] = useState(null);
-  
+
+  const { t } = useTranslation();
+
   // Get delivery info and cart functions from context
-  const { 
-    userPincode, 
-    getDeliveryInfoForCategory, 
+  const {
+    userPincode,
+    getDeliveryInfoForCategory,
     handlePincodeSet,
     addToCart,
   } = useAppContext();
@@ -62,7 +69,7 @@ const ProductListing = ({ navigation, route }) => {
   const fetchProducts = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       // Client-side filtering: Fetch ALL products (no category/subcategory in API call)
       const params = {
@@ -93,12 +100,12 @@ const ProductListing = ({ navigation, route }) => {
       }
     } catch (err) {
       console.error('Error fetching products:', err);
-      
+
       // Check if it's a validation error (400)
       if (err.response?.status === 400) {
         const errorData = err.response?.data;
         let errorMsg = 'Validation error. ';
-        
+
         if (errorData?.details && Array.isArray(errorData.details)) {
           const validationErrors = errorData.details.map(detail => {
             if (typeof detail === 'string') return detail;
@@ -106,19 +113,19 @@ const ProductListing = ({ navigation, route }) => {
             if (detail.msg) return detail.msg;
             return JSON.stringify(detail);
           }).join(', ');
-          
+
           errorMsg += validationErrors;
         } else if (errorData?.error) {
           errorMsg += errorData.error;
         } else {
           errorMsg += 'Please check your input and try again.';
         }
-        
+
         setError(errorMsg);
       } else {
         setError('Network error. Please check your internet connection.');
       }
-      
+
       setProducts([]);
     } finally {
       setLoading(false);
@@ -134,18 +141,13 @@ const ProductListing = ({ navigation, route }) => {
   };
 
   // Client-side filtering: Filter products by category and subcategory
-  // Category names from API: "Cement", "Iron", "Concrete Mixer"
-  // Homepage sends: "Cement", "Steel", "Concrete Mix"
-  // Uses category name mapping to match homepage names to API names
   const filteredProducts = products.filter(product => {
     // Filter by category with name mapping
     if (category.name && category.name !== 'All' && category.name !== 'Products') {
       const productCategory = (product.category || '').trim();
-      // Map homepage category name to API category name
       const apiCategoryName = getApiCategoryName(category.name);
       const selectedCategory = (apiCategoryName || category.name).trim();
-      
-      // Case-insensitive comparison for better matching
+
       if (productCategory.toLowerCase() !== selectedCategory.toLowerCase()) {
         return false;
       }
@@ -155,47 +157,43 @@ const ProductListing = ({ navigation, route }) => {
     if (selectedSubCategory && selectedSubCategory !== 'All') {
       const productSubCategory = (product.subCategory || '').trim();
       const selectedSub = selectedSubCategory.trim();
-      
-      // Special handling for "Others" - show products that are not OPC or PPC
+
       if (selectedSub === 'Others') {
         const subCatLower = productSubCategory.toLowerCase();
         if (subCatLower === 'opc' || subCatLower === 'ppc') {
           return false;
         }
-        // Show products that have a subcategory but it's not OPC or PPC
         return productSubCategory.length > 0;
       }
-      
-      // Case-insensitive comparison for OPC, PPC, etc.
+
       if (productSubCategory.toLowerCase() !== selectedSub.toLowerCase()) {
         return false;
       }
     }
-    
+
     return true;
   });
 
   // Sort products based on selected sort option
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (sortBy === 'none') return 0;
-    
-    // Get price for comparison - use totalPrice if pincode is set, otherwise currentPrice
+
     const getPrice = (product) => {
       if (userPincode && product.totalPrice) {
         return product.totalPrice;
       }
       return product.currentPrice || product.basePrice || 0;
     };
-    
+
     const priceA = getPrice(a);
     const priceB = getPrice(b);
-    
+
     if (sortBy === 'low-to-high') {
       return priceA - priceB;
     } else if (sortBy === 'high-to-low') {
       return priceB - priceA;
     }
-    
+
     return 0;
   });
 
@@ -207,133 +205,149 @@ const ProductListing = ({ navigation, route }) => {
     navigation.navigate('Cart');
   };
 
-  const toggleFavorite = (productId) => {
-    setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId);
-      } else {
-        newFavorites.add(productId);
-      }
-      return newFavorites;
-    });
+  const renderProductCard = (product) => {
+    const cardBorderColors = ['#7C3AED', '#2563EB']; // Violet to Blue
+    const buttonGradientColors = isDarkMode ? ['#4F46E5', '#3B82F6'] : ['#6366F1', '#3B82F6'];
+
+    return (
+      <View key={product.id || product._id} style={styles.productShadowWrapper}>
+        <LinearGradient
+          colors={cardBorderColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ padding: 1.5, borderRadius: 16, flex: 1 }} // Thickened and forced to fill
+        >
+          <TouchableOpacity
+            style={styles.productCard}
+            onPress={() => handleProductPress(product)}
+            activeOpacity={0.9}
+          >
+            {/* Image Section */}
+            <View style={styles.productImageContainer}>
+              {product.image ? (
+                <Image
+                  source={{ uri: product.image }}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+              ) : (
+                <View style={styles.placeholderImage}>
+                  <Icon name="image" size={24} color={isDarkMode ? "#4B5563" : "#9CA3AF"} />
+                </View>
+              )}
+            </View>
+
+            {/* Content Section */}
+            <View style={styles.productInfo}>
+              <View>
+                <Text style={styles.productName} numberOfLines={2}>
+                  {product.name || product.itemDescription}
+                </Text>
+                
+                <Text style={styles.priceLabel}>
+                  {t('Price on request')}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  addToCart(product);
+                  Toast.show({
+                    type: 'success',
+                    text1: t('Added to Enquiry'),
+                    text2: `${product.name || product.itemDescription} ${t('added successfully')}`,
+                  });
+                }}
+                style={{ width: '100%' }}
+              >
+                <LinearGradient
+                  colors={buttonGradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.enquiryButton}
+                >
+                  <Text style={styles.enquiryButtonText}>{t('Enquiry')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </LinearGradient>
+      </View>
+    );
   };
 
-  const renderProductCard = (product) => {
-    const discount = product.discount || 0;
-    const hasDiscount = discount > 0 && product.basePrice > product.currentPrice;
-    
+  const renderOthersProductCard = (product) => {
+    const cardBorderColors = ['#7C3AED', '#2563EB']; // Violet to Blue
+    const buttonGradientColors = isDarkMode ? ['#4F46E5', '#3B82F6'] : ['#6366F1', '#3B82F6'];
+
     return (
-      <TouchableOpacity
-        key={product.id || product._id}
-        style={styles.productCard}
-        onPress={() => handleProductPress(product)}
-        activeOpacity={0.8}
-      >
-        {/* Image Section */}
-        <View style={styles.productImageContainer}>
-          {product.image ? (
-            <Image 
-              source={{ uri: product.image }} 
-              style={styles.productImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Icon name="image" size={30} color="#9CA3AF" />
-            </View>
-          )}
-          
-          {/* Discount Badge */}
-          {hasDiscount && (
-            <View style={styles.discountBadge}>
-              <Text style={styles.discountBadgeText}>{discount}% OFF</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Content Section */}
-        <View style={styles.productInfo}>
-          {/* Product Name */}
-          <Text style={styles.productName} numberOfLines={2}>
-            {product.name || product.itemDescription}
-          </Text>
-
-          {/* Price hidden per handoff - show placeholder */}
-          <View style={styles.pricingSection}>
-            <View style={styles.priceContainer}>
-              <Text style={styles.currentPrice}>Price on request</Text>
-            </View>
-          </View>
-
-          {/* Action Button */}
+      <View key={product.id || product._id} style={styles.othersProductShadowWrapper}>
+        <LinearGradient
+          colors={cardBorderColors}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.othersProductBorderGradient}
+        >
           <TouchableOpacity
-            style={[
-              styles.addToCartButton,
-              !product.isDeliveryAvailable && styles.addToCartButtonDisabled
-            ]}
-            disabled={!product.isDeliveryAvailable}
-            onPress={async (e) => {
-              e.stopPropagation();
-              if (!userPincode) {
-                Toast.show({
-                  type: 'error',
-                  text1: 'Pincode Required',
-                  text2: 'Please set your delivery pincode to add items to cart.',
-                });
-                return;
-              }
-              
-              // Add to cart - show modal on success, toast only on error
-              try {
-                const result = await addToCart(product, 1);
-                console.log('Add to cart result:', result);
-                
-                // Always show modal if success is true OR if there's no error (treat as success)
-                // Only show toast if there's an explicit error
-                if (result.success === true || (!result.error && result.message)) {
-                  // Set product data and show modal (NO TOAST)
-                  setAddedProduct(product);
-                  setShowAddToCartModal(true);
-                  console.log('Showing add to cart modal');
-                } else if (result.error) {
-                  // Only show toast for actual errors
-                  Toast.show({
-                    type: 'error',
-                    text1: 'Error',
-                    text2: result.error || 'Failed to add product to cart',
-                  });
-                } else {
-                  // Default: treat as success and show modal
-                  setAddedProduct(product);
-                  setShowAddToCartModal(true);
-                  console.log('Showing add to cart modal (default success)');
-                }
-              } catch (error) {
-                console.error('Error in add to cart:', error);
-                Toast.show({
-                  type: 'error',
-                  text1: 'Error',
-                  text2: 'Failed to add product to cart. Please try again.',
-                });
-              }
-            }}
+            style={styles.othersProductCard}
+            onPress={() => handleProductPress(product)}
+            activeOpacity={0.9}
           >
-            <Text style={[
-              styles.addToCartButtonText,
-              !product.isDeliveryAvailable && styles.addToCartButtonTextDisabled
-            ]}>
-              {product.isDeliveryAvailable ? 'Add to Cart' : 'Not Available'}
-            </Text>
+            {/* Left Content Column */}
+            <View style={styles.othersProductInfo}>
+              <Text style={styles.othersProductName} numberOfLines={2}>
+                {product.name || product.itemDescription}
+              </Text>
+              
+              <Text style={styles.othersPriceLabel}>
+                {t('Price on request')}
+              </Text>
+
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  addToCart(product);
+                  Toast.show({
+                    type: 'success',
+                    text1: t('Added to Enquiry'),
+                    text2: `${product.name || product.itemDescription} ${t('added successfully')}`,
+                  });
+                }}
+                style={{ alignSelf: 'flex-start' }}
+              >
+                <LinearGradient
+                  colors={buttonGradientColors}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.othersEnquiryButton}
+                >
+                  <Text style={styles.othersEnquiryButtonText}>{t('Enquiry')}</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+
+            {/* Right Image Column */}
+            <View style={styles.othersProductImageContainer}>
+              {product.image ? (
+                <Image
+                  source={{ uri: product.image }}
+                  style={styles.othersProductImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={styles.placeholderImage}>
+                  <Icon name="image" size={32} color={isDarkMode ? "#4B5563" : "#9CA3AF"} />
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+        </LinearGradient>
+      </View>
     );
   };
 
   const renderDeliveryLocation = () => {
-    const deliveryInfo = getDeliveryInfoForCategory(category.name);
-    
     return (
       <View style={styles.deliveryLocationSection}>
         <View style={styles.deliveryLocationHeader}>
@@ -341,20 +355,20 @@ const ProductListing = ({ navigation, route }) => {
             <Icon name="map-pin" size={16} color="#723FED" />
           </View>
           <View style={styles.deliveryLocationInfo}>
-            <Text style={styles.deliveryLocationTitle}>Delivery Location</Text>
-            <Text style={styles.deliveryLocationPincode}>{userPincode || 'Not set'}</Text>
+            <Text style={styles.deliveryLocationTitle}>{t('Delivery Location')}</Text>
+            <Text style={styles.deliveryLocationPincode}>{userPincode || t('Not set')}</Text>
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.changeButton}
             onPress={handleChangePincode}
           >
             <LinearGradient
-              colors={['#723FED', '#3B58EB']}
+              colors={colors.primaryGradient}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.changeButtonGradient}
             >
-              <Text style={styles.changeButtonText}>Change</Text>
+              <Text style={styles.changeButtonText}>{t('Change')}</Text>
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -362,32 +376,80 @@ const ProductListing = ({ navigation, route }) => {
     );
   };
 
-  // Get subcategories for filter - simplified for Cement: only OPC, PPC, Others
   const getSubCategories = () => {
-    if (category.name === 'Cement' || category.name === 'Cement') {
-      // For Cement, only show OPC, PPC, and Others
-      const cementSubCategories = ['All', 'OPC', 'PPC', 'Others'];
-      return cementSubCategories;
+    const categoryName = (category.name || '').toLowerCase();
+    if (categoryName.includes('cement')) {
+      return ['All', 'OPC', 'PPC', 'Others'];
     }
-    // For other categories, show all unique subcategories
-    return ['All', ...new Set(products.map(p => p.subCategory).filter(Boolean))];
+    let uniqueSubs = [...new Set(products.map(p => p.subCategory).filter(Boolean))];
+    if (categoryName.includes('steel')) {
+      return ['All', '8mm', '5mm'];
+    } else if (categoryName.includes('concrete mix') || categoryName.includes('concretemix') || categoryName.includes('concrete mixer') || categoryName.includes('mixer') || categoryName.includes('others')) {
+      const removeSet = new Set(['opc', 'ppc', 'tmt bars', 'psc']);
+      uniqueSubs = uniqueSubs.filter(sub => !removeSet.has(sub.toLowerCase()));
+    }
+    return ['All', ...uniqueSubs];
   };
+
   const subCategories = getSubCategories();
+
+  const renderOthersSkeleton = () => {
+    const skeletonItems = [1, 2, 3, 4];
+    return (
+      <View style={{ width: '100%' }}>
+        {skeletonItems.map((item) => (
+          <View key={item} style={styles.othersProductCardWrapper}>
+            <View style={[styles.othersProductCard, { overflow: 'hidden', borderWidth: 1.5, borderColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
+              {/* Left Column content */}
+              <View style={styles.othersProductInfo}>
+                <Skeleton width="90%" height={24} borderRadius={4} style={{ marginBottom: 12 }} />
+                <Skeleton width="60%" height={18} borderRadius={4} style={{ marginBottom: 16 }} />
+                <Skeleton width={120} height={36} borderRadius={18} />
+              </View>
+              {/* Right Column content */}
+              <View style={styles.othersProductImageContainer}>
+                <Skeleton width={110} height={110} borderRadius={12} />
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const renderSkeleton = () => {
+    const skeletonItems = [1, 2, 3, 4, 5, 6];
+    return (
+      <View style={styles.skeletonContainer}>
+        {skeletonItems.map((item) => (
+          <View key={item} style={styles.productCardWrapper}>
+            <View style={styles.skeletonCard}>
+              <Skeleton height={160} borderRadius={16} />
+              <View style={{ padding: spacing.md }}>
+                <Skeleton width="80%" height={20} borderRadius={4} style={{ marginBottom: 8 }} />
+                <Skeleton width="50%" height={16} borderRadius={4} style={{ marginBottom: 16 }} />
+                <Skeleton width="100%" height={44} borderRadius={30} />
+              </View>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   const renderLoadingState = () => (
     <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#723FED" />
-      <Text style={styles.loadingText}>Loading products...</Text>
+      {category.name === 'Others' ? renderOthersSkeleton() : renderSkeleton()}
     </View>
   );
 
   const renderErrorState = () => (
     <View style={styles.errorContainer}>
       <Icon name="alert-circle" size={48} color="#DC2626" />
-      <Text style={styles.errorTitle}>Unable to Load Products</Text>
+      <Text style={styles.errorTitle}>{t('Unable to Load Products')}</Text>
       <Text style={styles.errorMessage}>{error}</Text>
       <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-        <Text style={styles.retryButtonText}>Retry</Text>
+        <Text style={styles.retryButtonText}>{t('Retry')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -395,25 +457,32 @@ const ProductListing = ({ navigation, route }) => {
   const renderEmptyState = () => (
     <View style={styles.emptyContainer}>
       <Icon name="package" size={60} color="#9CA3AF" />
-      <Text style={styles.emptyText}>No products found</Text>
+      <Text style={styles.emptyText}>{t('No products found')}</Text>
       <Text style={styles.emptySubtext}>
-        We couldn't find any products in this category.
-        {'\n'}Try selecting a different category or check back later.
+        {t("We couldn't find any products in this category. \nTry selecting a different category or check back later.")}
       </Text>
       <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-        <Text style={styles.retryButtonText}>Refresh</Text>
+        <Text style={styles.retryButtonText}>{t('Refresh')}</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderFilterButton = (items, selectedItem, onSelect, title) => {
     if (!items || items.length === 0 || items.length === 1) return null;
-    
+
     return (
       <View style={styles.filterSection}>
-        <Text style={styles.filterTitle}>{title}</Text>
-        <ScrollView 
-          horizontal 
+        <View style={styles.filterHeader}>
+          <Text style={styles.filterTitle}>{title}</Text>
+          <TouchableOpacity 
+            style={styles.filterIconButton}
+            onPress={() => setShowSortDropdown(true)}
+          >
+            <Icon name="sliders" size={18} color="#723FED" />
+          </TouchableOpacity>
+        </View>
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterButtonsContainer}
         >
@@ -421,14 +490,11 @@ const ProductListing = ({ navigation, route }) => {
             <TouchableOpacity
               key={item}
               style={styles.filterButton}
-              onPress={() => {
-                onSelect(item);
-                // Filter change will trigger useEffect to fetch new products
-              }}
+              onPress={() => onSelect(item)}
             >
               {selectedItem === item ? (
                 <LinearGradient
-                  colors={['#723FED', '#3B58EB']}
+                  colors={colors.primaryGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.filterButtonGradient}
@@ -448,10 +514,34 @@ const ProductListing = ({ navigation, route }) => {
   return (
     <>
       <View style={styles.container}>
-        <ScrollView 
-          style={styles.content} 
-          showsVerticalScrollIndicator={false}
+        <FlatList
+          key={category.name === 'Others' ? 'list-single-column' : 'list-three-columns'}
+          data={sortedProducts}
+          keyExtractor={(item, index) => item.id || item._id || index.toString()}
+          renderItem={({ item }) => (
+            <View style={category.name === 'Others' ? styles.othersProductCardWrapper : styles.productCardWrapper}>
+              {category.name === 'Others' ? renderOthersProductCard(item) : renderProductCard(item)}
+            </View>
+          )}
+          numColumns={category.name === 'Others' ? 1 : 3}
+          columnWrapperStyle={category.name === 'Others' ? undefined : styles.columnWrapper}
           contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          ListHeaderComponent={
+            <>
+              <View style={styles.topActionsHeaderContainer}>
+                <TouchableOpacity 
+                  style={styles.filterIconButtonHeader}
+                  onPress={() => setShowSortDropdown(true)}
+                >
+                  <Icon name="sliders" size={20} color="#723FED" />
+                </TouchableOpacity>
+              </View>
+              {loading && renderLoadingState()}
+              {!loading && error && renderErrorState()}
+              {!loading && !error && sortedProducts.length === 0 && renderEmptyState()}
+            </>
+          }
           refreshControl={
             <RefreshControl
               refreshing={loading}
@@ -459,56 +549,9 @@ const ProductListing = ({ navigation, route }) => {
               tintColor="#723FED"
             />
           }
-        >
-          {/* Delivery Location Section */}
-          {renderDeliveryLocation()}
-
-          {/* Filters */}
-          {!loading && !error && subCategories.length > 1 && (
-            renderFilterButton(subCategories, selectedSubCategory, setSelectedSubCategory, 'Subcategory')
-          )}
-
-          {/* Sorting Dropdown */}
-          {!loading && !error && filteredProducts.length > 0 && (
-            <View style={styles.filterSection}>
-              <Text style={styles.filterTitle}>Sort</Text>
-              <TouchableOpacity
-                style={styles.dropdownButton}
-                onPress={() => setShowSortDropdown(true)}
-              >
-                <Text style={styles.dropdownButtonText}>
-                  {sortBy === 'none' ? 'Default' : sortBy === 'low-to-high' ? 'Low to High' : 'High to Low'}
-                </Text>
-                <Icon name="chevron-down" size={20} color="#723FED" />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Loading State */}
-          {loading && renderLoadingState()}
-
-          {/* Error State */}
-          {!loading && error && renderErrorState()}
-
-          {/* Empty State */}
-          {!loading && !error && sortedProducts.length === 0 && renderEmptyState()}
-
-          {/* Products Grid */}
-          {!loading && !error && sortedProducts.length > 0 && (
-            <View style={styles.productsContainer}>
-              <View style={styles.productsGrid}>
-                {sortedProducts.map((product, index) => (
-                  <View key={product.id || product._id || index} style={styles.productCardWrapper}>
-                    {renderProductCard(product)}
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-        </ScrollView>
+        />
       </View>
 
-      {/* Pincode Modal */}
       <PincodeModal
         visible={showPincodeModal}
         onClose={() => setShowPincodeModal(false)}
@@ -518,21 +561,8 @@ const ProductListing = ({ navigation, route }) => {
         }}
       />
 
-      {/* Add to Cart Success Modal */}
-      <AddToCartSuccessModal
-        visible={showAddToCartModal}
-        onClose={() => setShowAddToCartModal(false)}
-        onContinueShopping={() => setShowAddToCartModal(false)}
-        onViewCart={() => {
-          setShowAddToCartModal(false);
-          navigation.navigate('Cart');
-        }}
-        productName={addedProduct?.name || addedProduct?.itemDescription || 'Product'}
-        quantity={1}
-        unit={addedProduct?.units || addedProduct?.unit || 'PIECE'}
-      />
 
-      {/* Sort Dropdown Modal */}
+
       <Modal
         visible={showSortDropdown}
         transparent={true}
@@ -545,11 +575,11 @@ const ProductListing = ({ navigation, route }) => {
           onPress={() => setShowSortDropdown(false)}
         >
           <View style={styles.dropdownContainer}>
-            <Text style={styles.dropdownTitle}>Sort</Text>
+            <Text style={styles.dropdownTitle}>{t('Sort')}</Text>
             {[
-              { value: 'none', label: 'Default' },
-              { value: 'low-to-high', label: 'Low to High' },
-              { value: 'high-to-low', label: 'High to Low' }
+              { value: 'none', label: t('Default') },
+              { value: 'low-to-high', label: t('Low to High') },
+              { value: 'high-to-low', label: t('High to Low') }
             ].map(option => (
               <TouchableOpacity
                 key={option.value}
@@ -578,169 +608,161 @@ const ProductListing = ({ navigation, route }) => {
       </Modal>
 
       <CustomerCareFooter />
+      <CartFloatingPill navigation={navigation} />
     </>
   );
 };
 
-const styles = StyleSheet.create({
-  ...productListingStyles,
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.md,
-  },
-  scrollContent: {
-    paddingBottom: spacing.lg,
-  },
-  deliveryLocationSection: {
-    backgroundColor: 'white',
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
-    marginVertical: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: {
-      width: 0,
-      height: 2,
+const createAllStyles = (colors, isDarkMode) => {
+  const baseStyles = createProductListingStyles(colors, isDarkMode);
+  return StyleSheet.create({
+    ...baseStyles,
+    content: {
+      flex: 1,
+      paddingHorizontal: spacing.md,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  deliveryLocationHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  deliveryLocationIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#E8E5FF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.sm,
-  },
-  deliveryLocationInfo: {
-    flex: 1,
-  },
-  deliveryLocationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  deliveryLocationPincode: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  deliveryTimeText: {
-    fontSize: 14,
-    color: '#10B981',
-    fontWeight: '500',
-  },
-  changeButton: {
-    borderRadius: borderRadius.md,
-    overflow: 'hidden',
-  },
-  changeButtonGradient: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
-  },
-  changeButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+  scrollContent: {
+    paddingTop: spacing.xxl + 60,
+    paddingBottom: 250, 
   },
   filterSection: {
     marginVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  filterHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   filterTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
+  },
+  filterIconButton: {
+    padding: spacing.xs,
+    backgroundColor: isDarkMode ? colors.surface_container_high : '#F0EEFF',
+    borderRadius: 8,
   },
   filterButtonsContainer: {
     flexDirection: 'row',
-    paddingRight: 20,
-  },
-  filterButtons: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   filterButton: {
     paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#723FED',
-    backgroundColor: '#E8E5FF',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: colors.primary,
+    backgroundColor: isDarkMode ? colors.surface_container_low : '#FFFFFF',
     marginRight: spacing.sm,
-    minWidth: 80,
+    minHeight: 36,
+    justifyContent: 'center',
   },
   filterButtonGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 12,
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 7,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0,
   },
   filterButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#723FED',
-    textAlign: 'center',
   },
   filterButtonTextActive: {
     color: colors.textWhite,
-    textAlign: 'center',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
-  dropdownButton: {
+  columnWrapper: {
+    justifyContent: 'flex-start', // Use flex-start for tighter grid
+    paddingHorizontal: 8,
+  },
+  productCardWrapper: {
+    // Width is handled in baseStyles/productShadowWrapper
+  },
+  othersProductCardWrapper: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    width: '100%',
+  },
+  othersProductShadowWrapper: {
+    borderRadius: 16,
+    backgroundColor: colors.background,
+    ...shadows.cloud,
+    overflow: 'visible',
+  },
+  othersProductBorderGradient: {
+    padding: 1.5,
+    borderRadius: 16,
+  },
+  othersProductCard: {
+    height: 146,
+    borderRadius: 15,
+    backgroundColor: isDarkMode ? '#111318' : '#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#E8E5FF',
-    borderRadius: 12,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#723FED',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  dropdownButtonText: {
-    fontSize: 16,
+  othersProductInfo: {
+    flex: 1.2,
+    justifyContent: 'center',
+    paddingRight: spacing.sm,
+  },
+  othersProductName: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: isDarkMode ? '#E5E7EB' : '#1F2937',
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  othersPriceLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    color: '#723FED',
+    color: isDarkMode ? '#9CA3AF' : '#4B5563',
+    marginBottom: 12,
+  },
+  othersEnquiryButton: {
+    width: 120,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  othersEnquiryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  othersProductImageContainer: {
+    flex: 0.8,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  othersProductImage: {
+    width: 110,
+    height: 110,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   dropdownContainer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.card,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     width: '80%',
     maxWidth: 300,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
+    ...shadows.cloud,
   },
   dropdownTitle: {
     fontSize: 18,
@@ -759,7 +781,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   dropdownOptionSelected: {
-    backgroundColor: '#E8E5FF',
+    backgroundColor: isDarkMode ? colors.surface_container : '#E8E5FF',
   },
   dropdownOptionText: {
     fontSize: 16,
@@ -767,189 +789,49 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   dropdownOptionTextSelected: {
-    color: '#723FED',
+    color: colors.primary,
     fontWeight: '600',
   },
-  productsContainer: {
-    paddingBottom: 20,
-  },
-  productsGrid: {
+  topActionsHeaderContainer: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    width: '100%',
-    justifyContent: 'space-between',
-  },
-  productCardWrapper: {
-    width: (screenWidth - spacing.md * 2 - spacing.sm) / 2, // 2 items per row with gap
-    marginBottom: spacing.md,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingVertical: 60,
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  errorTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  errorMessage: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  retryButton: {
-    backgroundColor: '#723FED',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 20,
-  },
-  placeholderImage: {
-    width: '100%',
-    height: 140,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  productCard: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 2,
-  },
-  productImageContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 140,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  productImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#10B981',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 9999,
     zIndex: 10,
+    marginTop: 10,
   },
-  discountBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
+  filterIconButtonHeader: {
+    padding: 12,
+    backgroundColor: isDarkMode ? colors.surface_container_high : '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#723FED30',
+    ...shadows.cloud,
+    elevation: 4,
   },
-  productInfo: {
-    padding: 10,
+  filterTextLabel: {
+    marginLeft: 8,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#723FED',
   },
-  productName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1F2937',
-    marginBottom: 8,
-    minHeight: 36, // Ensure consistent height for 2 lines
-  },
-  pricingSection: {
-    marginBottom: 10,
-  },
-  priceContainer: {
+  skeletonContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
     flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
   },
-  originalPrice: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    textDecorationLine: 'line-through',
+  skeletonCard: {
+    backgroundColor: isDarkMode ? '#111113' : '#FFFFFF',
+    borderRadius: 15, // Slightly smaller than wrapper to prevent gradient clipping
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+    width: (screenWidth - 32) / 3, // Match the card width logic
+    marginBottom: 12,
   },
-  currentPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  totalPrice: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#2563EB',
-  },
-  addToCartButton: {
-    width: '100%',
-    backgroundColor: '#1D4ED8',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addToCartButtonDisabled: {
-    backgroundColor: '#D1D5DB',
-  },
-  addToCartButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  addToCartButtonTextDisabled: {
-    color: '#6B7280',
-  },
-});
+  });
+};
 
-export default ProductListing; 
+export default ProductListing;

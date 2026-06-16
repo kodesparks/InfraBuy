@@ -14,14 +14,14 @@ export const createResource = async (endpoint, data) => {
     });
 
     const response = await apiClient.post(endpoint, data);
-    
+
     // Log the response
     console.log('✅ API RESPONSE:', {
       status: response.status,
       data: response.data,
       timestamp: new Date().toISOString()
     });
-    
+
     return {
       success: true,
       data: response.data,
@@ -36,10 +36,24 @@ export const createResource = async (endpoint, data) => {
       timestamp: new Date().toISOString()
     });
 
+    // Determine user-friendly error message
+    let errorMessage = 'Something went wrong';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.response?.data?.errors?.[0]?.msg) {
+      errorMessage = error.response.data.errors[0].msg;
+    } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+      errorMessage = 'Server is not responding. Please try again later.';
+    } else if (!error.response && error.message === 'Network Error') {
+      errorMessage = 'Unable to connect to server. Check your internet connection.';
+    } else if (!error.response) {
+      errorMessage = 'Server is unreachable. Please try again later.';
+    }
+
     return {
       success: false,
       error: {
-        message: error.response?.data?.message || error.response?.data?.errors?.[0]?.msg || 'Something went wrong',
+        message: errorMessage,
         status: error.response?.status,
         details: error.response?.data
       }
@@ -60,3 +74,5 @@ export const handleError = (error, operation) => {
     }
   };
 };
+
+

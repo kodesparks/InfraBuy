@@ -8,17 +8,24 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, spacing, borderRadius } from '../../assets/styles/global';
+import { spacing, borderRadius } from '../../assets/styles/global';
+import { useTheme } from '../../context/ThemeContext';
 import { updateProfile } from '../../services/api';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from 'react-i18next';
 
 const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
+  const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors), [colors]);
   const [name, setName] = useState(user?.name || '');
   const [address, setAddress] = useState(user?.address || '');
   const [pincode, setPincode] = useState(user?.pincode || '');
   const [contractId, setContractId] = useState(user?.contractId || '');
+  const [gstNumber, setGstNumber] = useState(user?.gstNumber || '');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -28,6 +35,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
       setAddress(user?.address || '');
       setPincode(user?.pincode || '');
       setContractId(user?.contractId || '');
+      setGstNumber(user?.gstNumber || '');
       setErrors({});
     }
   }, [visible, user]);
@@ -36,17 +44,17 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
     const newErrors = {};
 
     if (!name.trim()) {
-      newErrors.name = 'Name is required';
+      newErrors.name = t('Name is required');
     }
 
     if (!address.trim()) {
-      newErrors.address = 'Address is required';
+      newErrors.address = t('Address is required');
     }
 
     if (!pincode.trim()) {
-      newErrors.pincode = 'Pincode is required';
+      newErrors.pincode = t('Pincode is required');
     } else if (!/^\d{6}$/.test(pincode.trim())) {
-      newErrors.pincode = 'Pincode must be 6 digits';
+      newErrors.pincode = t('Pincode must be 6 digits');
     }
 
     setErrors(newErrors);
@@ -59,7 +67,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
     }
 
     if (!user?.id) {
-      Alert.alert('Error', 'User ID not found');
+      Alert.alert(t('Error'), t('User ID not found'));
       return;
     }
 
@@ -70,14 +78,15 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
         address: address.trim(),
         pincode: pincode.trim(),
         contractId: contractId.trim(),
+        gstNumber: gstNumber.trim(),
       };
 
       const result = await updateProfile(user.id, profileData);
       if (result.success) {
         Toast.show({
           type: 'success',
-          text1: 'Success',
-          text2: result.message || 'Profile updated successfully',
+          text1: t('Success!'),
+          text2: result.message || t('Profile updated successfully'),
         });
         // Pass updated user data directly to avoid API call
         onSuccess(result.data);
@@ -85,15 +94,15 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
       } else {
         Toast.show({
           type: 'error',
-          text1: 'Error',
-          text2: result.error?.message || 'Failed to update profile',
+          text1: t('Error'),
+          text2: result.error?.message || t('Failed to update profile'),
         });
       }
     } catch (error) {
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: 'Failed to update profile',
+        text1: t('Error'),
+        text2: t('Failed to update profile'),
       });
     } finally {
       setLoading(false);
@@ -110,7 +119,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Edit Profile</Text>
+            <Text style={styles.modalTitle}>{t('Edit Profile')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Icon name="x" size={24} color={colors.text} />
             </TouchableOpacity>
@@ -119,7 +128,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={styles.form}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Full Name *</Text>
+                <Text style={styles.label}>{t('Full Name *')}</Text>
                 <TextInput
                   style={[styles.input, errors.name && styles.inputError]}
                   value={name}
@@ -129,14 +138,14 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
                       setErrors({ ...errors, name: null });
                     }
                   }}
-                  placeholder="Enter your full name"
+                  placeholder={t('Enter your full name')}
                   placeholderTextColor={colors.textSecondary}
                 />
                 {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Address *</Text>
+                <Text style={styles.label}>{t('Address *')}</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -150,7 +159,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
                       setErrors({ ...errors, address: null });
                     }
                   }}
-                  placeholder="Enter your address"
+                  placeholder={t('Enter your address')}
                   placeholderTextColor={colors.textSecondary}
                   multiline
                   numberOfLines={4}
@@ -161,7 +170,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Pincode *</Text>
+                <Text style={styles.label}>{t('Pincode *')}</Text>
                 <TextInput
                   style={[styles.input, errors.pincode && styles.inputError]}
                   value={pincode}
@@ -171,7 +180,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
                       setErrors({ ...errors, pincode: null });
                     }
                   }}
-                  placeholder="Enter 6-digit pincode"
+                  placeholder={t('Enter 6-digit pincode')}
                   placeholderTextColor={colors.textSecondary}
                   keyboardType="numeric"
                   maxLength={6}
@@ -182,7 +191,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Contract ID</Text>
+                <Text style={styles.label}>{t('Contract ID')}</Text>
                 <TextInput
                   style={[styles.input, errors.contractId && styles.inputError]}
                   value={contractId}
@@ -192,12 +201,25 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
                       setErrors({ ...errors, contractId: null });
                     }
                   }}
-                  placeholder="Enter contract ID"
+                  placeholder={t('Enter contract ID')}
                   placeholderTextColor={colors.textSecondary}
                 />
                 {errors.contractId && (
                   <Text style={styles.errorText}>{errors.contractId}</Text>
                 )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{t('GST Number')}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={gstNumber}
+                  onChangeText={setGstNumber}
+                  placeholder={t('Enter GST Number')}
+                  placeholderTextColor={colors.textSecondary}
+                  autoCapitalize="characters"
+                  maxLength={15}
+                />
               </View>
             </View>
           </ScrollView>
@@ -208,7 +230,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
               onPress={onClose}
               disabled={loading}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('Cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.submitButton]}
@@ -218,7 +240,7 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
               {loading ? (
                 <ActivityIndicator size="small" color="#FFFFFF" />
               ) : (
-                <Text style={styles.submitButtonText}>Save Changes</Text>
+                <Text style={styles.submitButtonText}>{t('Save Changes')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -228,24 +250,24 @@ const EditProfileModal = ({ visible, onClose, user, onSuccess }) => {
   );
 };
 
-const styles = {
+const createStyles = (colors) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: borderRadius.xl,
-    borderTopRightRadius: borderRadius.xl,
+    backgroundColor: colors.background || colors.white || '#FFFFFF',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     maxHeight: '90%',
-    paddingBottom: spacing.lg,
+    paddingBottom: 24,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -255,22 +277,22 @@ const styles = {
     color: colors.textPrimary,
   },
   form: {
-    padding: spacing.md,
+    padding: 16,
   },
   inputGroup: {
-    marginBottom: spacing.md,
+    marginBottom: 16,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
+    borderRadius: 8,
+    padding: 16,
     fontSize: 16,
     color: colors.textPrimary,
     backgroundColor: colors.background,
@@ -285,17 +307,17 @@ const styles = {
   errorText: {
     color: colors.error,
     fontSize: 12,
-    marginTop: spacing.xs,
+    marginTop: 8,
   },
   buttonContainer: {
     flexDirection: 'row',
-    padding: spacing.md,
-    gap: spacing.md,
+    padding: 16,
+    gap: 16,
   },
   button: {
     flex: 1,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    paddingVertical: 16,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -313,11 +335,10 @@ const styles = {
     backgroundColor: colors.primary,
   },
   submitButtonText: {
-    color: colors.white,
+    color: colors.textWhite || colors.white || '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },
-};
+});
 
 export default EditProfileModal;
-

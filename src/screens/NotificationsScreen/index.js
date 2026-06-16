@@ -1,46 +1,52 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, FlatList, Alert } from 'react-native';
-import styles from '../../assets/styles/notifications';
+import Skeleton from '../../components/common/Skeleton';
+import { useTranslation } from 'react-i18next';
+import createStyles from '../../assets/styles/notifications';
+import { useTheme } from '../../context/ThemeContext';
 
 const NotificationsScreen = ({ navigation }) => {
+  const { t } = useTranslation();
+  const { colors, isDarkMode } = useTheme();
+  const styles = React.useMemo(() => createStyles(colors, isDarkMode), [colors, isDarkMode]);
   const [notifications] = useState([
     {
       id: 1,
-      title: 'Order Confirmed',
-      message: 'Your order #12345 has been confirmed and is being processed.',
-      time: '2 hours ago',
+      title: t('Order Confirmed'),
+      message: t('Your order #12345 has been confirmed and is being processed.'),
+      time: t('2 hours ago'),
       type: 'order',
       read: false
     },
     {
       id: 2,
-      title: 'Delivery Update',
-      message: 'Your cement order will be delivered tomorrow between 10 AM - 2 PM.',
-      time: '1 day ago',
+      title: t('Delivery Update'),
+      message: t('Your cement order will be delivered tomorrow between 10 AM - 2 PM.'),
+      time: t('1 day ago'),
       type: 'delivery',
       read: false
     },
     {
       id: 3,
-      title: 'Price Drop Alert',
-      message: 'Iron rods price has dropped by 5%. Check out the new prices!',
-      time: '2 days ago',
+      title: t('Price Drop Alert'),
+      message: t('Iron rods price has dropped by 5%. Check out the new prices!'),
+      time: t('2 days ago'),
       type: 'price',
       read: true
     },
     {
       id: 4,
-      title: 'New Product Available',
-      message: 'We have added new construction materials to our inventory.',
-      time: '3 days ago',
+      title: t('New Product Available'),
+      message: t('We have added new construction materials to our inventory.'),
+      time: t('3 days ago'),
       type: 'product',
       read: true
     },
     {
       id: 5,
-      title: 'Payment Successful',
-      message: 'Payment of ₹10,200 for order #12344 has been processed successfully.',
-      time: '1 week ago',
+      title: t('Payment Successful'),
+      message: t('Payment of ₹10,200 for order #12344 has been processed successfully.'),
+      time: t('1 week ago'),
       type: 'payment',
       read: true
     }
@@ -68,13 +74,13 @@ const NotificationsScreen = ({ navigation }) => {
       notification.title,
       notification.message,
       [
-        { text: 'OK', onPress: () => console.log('Notification pressed') }
+        { text: t('OK'), onPress: () => console.log('Notification pressed') }
       ]
     );
   };
 
   const handleMarkAllRead = () => {
-    Alert.alert('Success', 'All notifications marked as read');
+    Alert.alert(t('Success'), t('All notifications marked as read'));
   };
 
   const renderNotification = ({ item }) => (
@@ -94,6 +100,37 @@ const NotificationsScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  const renderNotificationsSkeleton = () => {
+    return (
+      <View style={styles.notificationsContainer}>
+        {[1, 2, 3, 4, 5].map(i => (
+          <View key={i} style={styles.notificationItem}>
+            <Skeleton width={48} height={48} borderRadius={24} style={{ marginRight: 16 }} />
+            <View style={{ flex: 1 }}>
+              <Skeleton width="40%" height={18} borderRadius={4} style={{ marginBottom: 8 }} />
+              <Skeleton width="90%" height={14} borderRadius={4} style={{ marginBottom: 6 }} />
+              <Skeleton width="30%" height={12} borderRadius={4} />
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        {renderNotificationsSkeleton()}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Notifications List */}
@@ -108,4 +145,5 @@ const NotificationsScreen = ({ navigation }) => {
   );
 };
 
-export default NotificationsScreen; 
+export default NotificationsScreen;
+
