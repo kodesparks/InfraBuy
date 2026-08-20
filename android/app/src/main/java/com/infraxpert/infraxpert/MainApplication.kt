@@ -1,4 +1,4 @@
-package com.infrabuy
+package com.infraxpert.infraxpert
 
 import android.app.Application
 import com.facebook.react.PackageList

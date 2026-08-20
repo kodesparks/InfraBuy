@@ -6,9 +6,9 @@ import { navigateToLogin } from '../navigation/navigationService';
 
 // API Configuration
 export const API_CONFIG = {
-  baseUrl: REACT_APP_API_URL || 'https://api.infraxpert.in',
+  baseUrl: REACT_APP_API_URL || 'http://13.207.203.200:5000',
   apiVersion: 'v1',
-  BASE_URL: REACT_APP_API_URL || 'https://api.infraxpert.in', // Keep for backward compatibility
+  BASE_URL: REACT_APP_API_URL || 'http://13.207.203.200:5000', // Keep for backward compatibility
   TIMEOUT: 30000,
   timeout: 30000,
   defaultHeaders: {
